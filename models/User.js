@@ -1,24 +1,40 @@
 class User {
-    constructor(username, password, role = 'EMPLOYEE', profile = {}) {
-        this.username = username;
-        this.password = password;
-        this.role = role;
-        this.profile = profile;
-        this.createdAt = new Date().toISOString();
+    constructor(id, username, password, role = 'employee', name = '', address = '') {
+      this.id = id;
+      this.username = username;
+      this.password = password;
+      this.role = role;
+      this.name = name;
+      this.address = address;
+      this.createdAt = new Date().toISOString();
     }
-
+  
     toItem() {
-        return {
-            PK: `USER#${this.username}`,
-            SK: `PROFILE#${this.username}`,
-            username: this.username,
-            password: this.password,
-            role: this.role,
-            profile: this.profile,
-            createdAt: this.createdAt,
-            type: 'USER'
-        };
+      return {
+        PK: `USER#${this.id}`,
+        SK: `USER#${this.id}`,
+        id: this.id,
+        username: this.username,
+        password: this.password,
+        role: this.role,
+        name: this.name,
+        address: this.address,
+        createdAt: this.createdAt,
+        type: 'USER'
+      };
     }
-}
-
-module.exports = User;
+  
+    static fromItem(item) {
+      if (!item) return null;
+      return new User(
+        item.id,
+        item.username,
+        item.password,
+        item.role,
+        item.name,
+        item.address
+      );
+    }
+  }
+  
+  module.exports = User;

@@ -108,6 +108,8 @@ User Profile/Account
 
 App structure:
 src/
+├── config/
+│   └── jwt.js
 ├── models/
 │   ├── User.js
 │   └── Ticket.js
