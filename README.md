@@ -106,3 +106,22 @@ User Profile/Account
 - Track additional user information (name, address, etc.)
 - Users can edit their account
 
+App structure:
+src/
+├── models/
+│   ├── User.js
+│   └── Ticket.js
+├── controllers/
+│   ├── authController.js
+│   └── ticketController.js
+├── services/
+│   ├── authService.js
+│   └── ticketService.js
+├── repositories/
+│   ├── userRepository.js
+│   └── ticketRepository.js
+├── middleware/
+│   └── auth.js
+├── utils/
+│   └── jwt.js
+└── app.js
