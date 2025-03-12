@@ -2,7 +2,7 @@
   "name": "reimbursement-system",
   "version": "1.0.0",
   "description": "Foundation project reqs:",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,9 +19,12 @@
   },
   "homepage": "https://github.com/boshma/Reimbursement-System#readme",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.758.0",
+    "@aws-sdk/lib-dynamodb": "^3.758.0",
     "aws-sdk": "^2.1692.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "reimbursement-system": "file:",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

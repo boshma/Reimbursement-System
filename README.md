@@ -81,3 +81,28 @@ User Story
 
 - As an Employee, I should be able to view all previous reimbursement ticket submissions.
 - Previous tickets should also show the details of submission.
+
+### Reimbursement Types Feature
+
+User Story
+Employees can add Reimbursement Types
+
+- Travel, Lodging, Food, Other
+- Employees can view previous requests filtered by type
+
+
+### Change Roles Feature
+
+User Story
+Managers can change other users’ roles
+
+- Employee to Manager or back to Employee
+
+### User Accounts Feature
+
+User Story
+User Profile/Account
+
+- Track additional user information (name, address, etc.)
+- Users can edit their account
+
