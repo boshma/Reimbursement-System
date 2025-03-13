@@ -1,10 +1,10 @@
 const request = require('supertest');
-const app = require('../../app');
-const authService = require('../../services/authService');
+const app = require('../../src/app');
+const authService = require('../../src/services/authService');
 const jwt = require('jsonwebtoken');
 
-jest.mock('../../services/authService');
-jest.mock('jsonwebtoken');
+jest.mock('../../src/services/authService');
+jest.mock('jsonwebtoken')
 
 describe('Auth Routes', () => {
   beforeEach(() => {

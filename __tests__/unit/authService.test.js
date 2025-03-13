@@ -1,12 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const authService = require('../../services/authService');
-const userRepository = require('../../repositories/userRepository');
-const User = require('../../models/User');
+const authService = require('../../src/services/authService');
+const userRepository = require('../../src/repositories/userRepository');
+const User = require('../../src/models/User');
 
-jest.mock('../../repositories/userRepository');
+jest.mock('../../src/repositories/userRepository');
 jest.mock('bcryptjs');
-jest.mock('jsonwebtoken');
+jest.mock('jsonwebtoken')
 
 describe('AuthService', () => {
   beforeEach(() => {

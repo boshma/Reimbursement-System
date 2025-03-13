@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const { USER_ROLES } = require('../utils/constants');
 
 class User {
   constructor({
@@ -8,8 +9,8 @@ class User {
     firstName = '',
     lastName = '',
     email = '',
-    role = 'EMPLOYEE',
     address = '',
+    role = USER_ROLES.EMPLOYEE,
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString()
   }) {
@@ -19,8 +20,8 @@ class User {
     this.firstName = firstName;
     this.lastName = lastName;
     this.email = email;
-    this.role = role;
     this.address = address;
+    this.role = role;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -35,11 +36,11 @@ class User {
       firstName: this.firstName,
       lastName: this.lastName,
       email: this.email,
-      role: this.role,
       address: this.address,
-      entityType: 'USER',
+      role: this.role,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
+      entityType: 'USER'
     };
   }
 
@@ -53,17 +54,17 @@ class User {
       firstName: item.firstName,
       lastName: item.lastName,
       email: item.email,
-      role: item.role,
       address: item.address,
+      role: item.role,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
     });
   }
 
+  // Return user data without sensitive information
   sanitize() {
-    const sanitized = { ...this };
-    delete sanitized.password;
-    return sanitized;
+    const { password, ...userWithoutPassword } = this;
+    return userWithoutPassword;
   }
 }
 
