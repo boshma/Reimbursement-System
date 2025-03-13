@@ -31,6 +31,7 @@ class User {
       PK: `USER#${this.id}`,
       SK: `USER#${this.id}`,
       id: this.id,
+      userId: this.id, 
       username: this.username,
       password: this.password,
       firstName: this.firstName,
