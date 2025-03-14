@@ -8,7 +8,7 @@ class Ticket {
     amount,
     description,
     status = TICKET_STATUS.PENDING,
-    reimbursementType = undefined, // Explicitly undefined by default, not 'OTHER'
+    reimbursementType,
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString(),
     processedBy = null,
