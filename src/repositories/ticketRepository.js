@@ -63,13 +63,13 @@ class TicketRepository {
     }
   }
 
-  async findByUserId(userId) {
+  async findByUser(userId) {
     const params = {
       TableName: tableName,
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      IndexName: 'UserTicketsIndex',
+      KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
-        ':pk': `USER#${userId}`,
-        ':sk': 'TICKET#'
+        ':userId': userId
       }
     };
 
@@ -77,19 +77,38 @@ class TicketRepository {
       const { Items } = await dynamoDb.send(new QueryCommand(params));
       return Items.map(item => Ticket.fromItem(item));
     } catch (error) {
-      console.error('Error finding tickets by user ID:', error);
-      throw error;
+      console.error('Error finding tickets by user:', error);
+      return [];
     }
   }
 
-  async findByUserIdAndType(userId, reimbursementType) {
+  async findByStatus(status) {
     const params = {
       TableName: tableName,
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      IndexName: 'TicketStatusIndex',
+      KeyConditionExpression: 'status = :status',
+      ExpressionAttributeValues: {
+        ':status': status
+      }
+    };
+
+    try {
+      const { Items } = await dynamoDb.send(new QueryCommand(params));
+      return Items.map(item => Ticket.fromItem(item));
+    } catch (error) {
+      console.error(`Error finding tickets by status ${status}:`, error);
+      return [];
+    }
+  }
+
+  async findByUserAndType(userId, reimbursementType) {
+    const params = {
+      TableName: tableName,
+      IndexName: 'UserTicketsIndex',
+      KeyConditionExpression: 'userId = :userId',
       FilterExpression: 'reimbursementType = :type',
       ExpressionAttributeValues: {
-        ':pk': `USER#${userId}`,
-        ':sk': 'TICKET#',
+        ':userId': userId,
         ':type': reimbursementType
       }
     };
@@ -98,18 +117,41 @@ class TicketRepository {
       const { Items } = await dynamoDb.send(new QueryCommand(params));
       return Items.map(item => Ticket.fromItem(item));
     } catch (error) {
-      console.error('Error finding tickets by user ID and type:', error);
-      throw error;
+      console.error('Error finding tickets by user and type:', error);
+      return [];
     }
   }
 
-  async findPendingTickets() {
+
+  async processTicket(ticketId, userId, managerId, status) {
+    if (status !== TICKET_STATUS.APPROVED && status !== TICKET_STATUS.DENIED) {
+      throw new Error('Invalid ticket status');
+    }
+
+    const ticket = await this.findById(userId, ticketId);
+    if (!ticket) {
+      throw new Error('Ticket not found');
+    }
+
+    if (ticket.status !== TICKET_STATUS.PENDING) {
+      throw new Error('Ticket has already been processed');
+    }
+
+    ticket.status = status;
+    ticket.updatedAt = new Date().toISOString();
+    ticket.processedBy = managerId;
+    ticket.processedAt = new Date().toISOString();
+
+    return this.update(ticket);
+  }
+
+  async getAllTickets() {
+    // Since we have a single-table design, we need to filter for ticket entities
     const params = {
       TableName: tableName,
-      IndexName: 'GSI1',
-      KeyConditionExpression: 'GSI1PK = :status',
+      FilterExpression: 'entityType = :entityType',
       ExpressionAttributeValues: {
-        ':status': `TICKET#${TICKET_STATUS.PENDING}`
+        ':entityType': 'TICKET'
       }
     };
 
@@ -117,8 +159,8 @@ class TicketRepository {
       const { Items } = await dynamoDb.send(new QueryCommand(params));
       return Items.map(item => Ticket.fromItem(item));
     } catch (error) {
-      console.error('Error finding pending tickets:', error);
-      throw error;
+      console.error('Error getting all tickets:', error);
+      return [];
     }
   }
 }
