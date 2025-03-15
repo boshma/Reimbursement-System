@@ -86,7 +86,10 @@ class TicketRepository {
     const params = {
       TableName: tableName,
       IndexName: 'TicketStatusIndex',
-      KeyConditionExpression: 'status = :status',
+      KeyConditionExpression: '#statusAttr = :status',
+      ExpressionAttributeNames: {
+        '#statusAttr': 'status'
+      },
       ExpressionAttributeValues: {
         ':status': status
       }
