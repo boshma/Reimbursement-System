@@ -8,7 +8,7 @@ class Ticket {
     amount,
     description,
     status = TICKET_STATUS.PENDING,
-    reimbursementType,
+    reimbursementType, // Note: Not defaulting to 'OTHER'
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString(),
     processedBy = null,
@@ -30,8 +30,6 @@ class Ticket {
     return {
       PK: `USER#${this.userId}`,
       SK: `TICKET#${this.id}`,
-      GSI1PK: 'TICKET',
-      GSI1SK: this.status,
       id: this.id,
       userId: this.userId,
       amount: this.amount,
