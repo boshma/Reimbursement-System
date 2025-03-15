@@ -1,5 +1,5 @@
 const { dynamoDb, tableName } = require('../config/db');
-const { PutCommand, QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, GetCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const Ticket = require('../models/Ticket');
 const { TICKET_STATUS } = require('../utils/constants');
 
@@ -149,7 +149,6 @@ class TicketRepository {
   }
 
   async getAllTickets() {
-    // Since we have a single-table design, we need to filter for ticket entities
     const params = {
       TableName: tableName,
       FilterExpression: 'entityType = :entityType',
@@ -159,7 +158,7 @@ class TicketRepository {
     };
 
     try {
-      const { Items } = await dynamoDb.send(new QueryCommand(params));
+      const { Items } = await dynamoDb.send(new ScanCommand(params));
       return Items.map(item => Ticket.fromItem(item));
     } catch (error) {
       console.error('Error getting all tickets:', error);
