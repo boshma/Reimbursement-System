@@ -50,10 +50,6 @@ class TicketService {
     return ticket;
   }
 
-  async getPendingTickets() {
-    return ticketRepository.findByStatus(TICKET_STATUS.PENDING);
-  }
-
   async getTicketsByStatus(status) {
     if (!Object.values(TICKET_STATUS).includes(status)) {
       throw new Error('Invalid ticket status');
