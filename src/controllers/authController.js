@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const fileUploadService = require('../services/fileUploadService');
 
 exports.register = async (req, res) => {
   try {
