@@ -316,4 +316,105 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(400);
     });
   });
+
+  describe('Error handling in Ticket API', () => {
+    let employeeToken, managerToken;
+    
+    beforeEach(() => {
+      employeeToken = jwt.sign(
+        { user: { id: '1', username: 'employee', role: USER_ROLES.EMPLOYEE } },
+        process.env.JWT_SECRET || 'testsecret',
+        { expiresIn: '1h' }
+      );
+  
+      managerToken = jwt.sign(
+        { user: { id: '2', username: 'manager', role: USER_ROLES.MANAGER } },
+        process.env.JWT_SECRET || 'testsecret',
+        { expiresIn: '1h' }
+      );
+      
+      ticketRepository.findByUser.mockRejectedValueOnce(new Error('Database error'));
+    });
+    
+    it('should handle errors when creating tickets', async () => {
+      const res = await request(app)
+        .post('/api/tickets')
+        .set('x-auth-token', employeeToken)
+        .send({
+          description: 'Test ticket'
+        });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Amount and description are required');
+    });
+    
+    it('should handle database errors when fetching tickets', async () => {
+      const res = await request(app)
+        .get('/api/tickets/my')
+        .set('x-auth-token', employeeToken);
+      
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Server error');
+    });
+    
+    it('should handle missing fields in ticket processing', async () => {
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1'
+        });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('User ID, ticket ID, and status are required');
+    });
+    
+    it('should handle ticket not found when processing', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket not found'));
+      
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '999',
+          ticketId: '999',
+          status: TICKET_STATUS.APPROVED
+        });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Ticket not found');
+    });
+    
+    it('should handle already processed tickets', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket has already been processed'));
+      
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1',
+          ticketId: '1',
+          status: TICKET_STATUS.APPROVED
+        });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Ticket has already been processed');
+    });
+    
+    it('should handle managers trying to process their own tickets', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Managers cannot process their own tickets'));
+      
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '2',
+          ticketId: '3',
+          status: TICKET_STATUS.APPROVED
+        });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Managers cannot process their own tickets');
+    });
+  });
 });
