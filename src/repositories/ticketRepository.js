@@ -70,7 +70,8 @@ class TicketRepository {
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
         ':userId': userId
-      }
+      },
+      ScanIndexForward: true
     };
 
     try {
@@ -92,7 +93,8 @@ class TicketRepository {
       },
       ExpressionAttributeValues: {
         ':status': status
-      }
+      },
+      ScanIndexForward: true
     };
 
     try {
@@ -113,7 +115,8 @@ class TicketRepository {
       ExpressionAttributeValues: {
         ':userId': userId,
         ':type': reimbursementType
-      }
+      },
+      ScanIndexForward: true
     };
 
     try {
@@ -156,10 +159,11 @@ class TicketRepository {
         ':entityType': 'TICKET'
       }
     };
-
+    
     try {
       const { Items } = await dynamoDb.send(new ScanCommand(params));
-      return Items.map(item => Ticket.fromItem(item));
+      return Items.map(item => Ticket.fromItem(item))
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     } catch (error) {
       console.error('Error getting all tickets:', error);
       return [];
