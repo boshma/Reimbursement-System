@@ -1,10 +1,12 @@
 const request = require('supertest');
 const app = require('../../src/app');
 const authService = require('../../src/services/authService');
+const fileUploadService = require('../../src/services/fileUploadService');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/services/authService');
-jest.mock('jsonwebtoken')
+jest.mock('../../src/services/fileUploadService');
+jest.mock('jsonwebtoken');
 
 describe('Auth Routes', () => {
   beforeEach(() => {
@@ -61,6 +63,17 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'Username already exists');
     });
+
+    test('should return 500 on server error', async () => {
+      authService.register.mockRejectedValue(new Error('Database error'));
+      
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'newuser', password: 'password123' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Server error');
+    });
   });
   
   describe('POST /api/auth/login', () => {
@@ -111,6 +124,17 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('message', 'Invalid credentials');
     });
+
+    test('should return 500 on server error', async () => {
+      authService.login.mockRejectedValue(new Error('Database error'));
+      
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'testuser', password: 'password123' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Server error');
+    });
   });
   
   describe('GET /api/auth/profile', () => {
@@ -124,13 +148,13 @@ describe('Auth Routes', () => {
       };
       
       authService.getUserById.mockResolvedValue(mockUser);
+      fileUploadService.getSignedUrl.mockResolvedValue('https://profile-picture-url.com');
       jwt.verify.mockReturnValue({ user: { id: '123' } });
       
       const response = await request(app)
         .get('/api/auth/profile')
         .set('x-auth-token', 'valid-token');
       
-
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('user');
       expect(response.body.user).toEqual(mockUser);
@@ -156,6 +180,202 @@ describe('Auth Routes', () => {
       
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('message', 'Token is not valid');
+    });
+
+    test('should return 500 if profile fetching fails', async () => {
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      authService.getUserById.mockRejectedValue(new Error('Database error'));
+      
+      const response = await request(app)
+        .get('/api/auth/profile')
+        .set('x-auth-token', 'valid-token');
+      
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Server error');
+    });
+  });
+
+  describe('PUT /api/auth/profile', () => {
+    test('should update user profile', async () => {
+      const updateData = {
+        firstName: 'Updated',
+        lastName: 'User',
+        email: 'updated@example.com',
+        address: '123 Main St'
+      };
+      
+      const mockUpdatedUser = {
+        id: '123',
+        username: 'testuser',
+        firstName: 'Updated',
+        lastName: 'User',
+        email: 'updated@example.com',
+        address: '123 Main St',
+        role: 'EMPLOYEE'
+      };
+      
+      authService.updateUserProfile.mockResolvedValue(mockUpdatedUser);
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .set('x-auth-token', 'valid-token')
+        .send(updateData);
+      
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'Profile updated successfully');
+      expect(response.body).toHaveProperty('user', mockUpdatedUser);
+      expect(authService.updateUserProfile).toHaveBeenCalledWith('123', updateData);
+    });
+    
+    test('should return 500 on server error', async () => {
+      authService.updateUserProfile.mockRejectedValue(new Error('Database error'));
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .set('x-auth-token', 'valid-token')
+        .send({ firstName: 'Updated' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Server error');
+    });
+  });
+
+  describe('PUT /api/auth/role', () => {
+    test('should update user role when manager', async () => {
+      const roleData = {
+        userId: '456',
+        role: 'MANAGER'
+      };
+      
+      const mockUpdatedUser = {
+        id: '456',
+        username: 'anotheruser',
+        role: 'MANAGER'
+      };
+      
+      authService.updateUserRole.mockResolvedValue(mockUpdatedUser);
+      jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
+      
+      const response = await request(app)
+        .put('/api/auth/role')
+        .set('x-auth-token', 'valid-token')
+        .send(roleData);
+      
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'User role updated successfully');
+      expect(response.body).toHaveProperty('user', mockUpdatedUser);
+      expect(authService.updateUserRole).toHaveBeenCalledWith('456', 'MANAGER');
+    });
+    
+    test('should return 400 if required fields missing', async () => {
+      jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
+      
+      const response = await request(app)
+        .put('/api/auth/role')
+        .set('x-auth-token', 'valid-token')
+        .send({ userId: '456' });
+      
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message', 'User ID and role are required');
+    });
+    
+    test('should return 400 if user not found', async () => {
+      authService.updateUserRole.mockRejectedValue(new Error('User not found'));
+      jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
+      
+      const response = await request(app)
+        .put('/api/auth/role')
+        .set('x-auth-token', 'valid-token')
+        .send({ userId: '999', role: 'MANAGER' });
+      
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message', 'User not found');
+    });
+
+    test('should return 400 if role is invalid', async () => {
+      authService.updateUserRole.mockRejectedValue(new Error('Invalid role'));
+      jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
+      
+      const response = await request(app)
+        .put('/api/auth/role')
+        .set('x-auth-token', 'valid-token')
+        .send({ userId: '456', role: 'INVALID_ROLE' });
+      
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message', 'Invalid role');
+    });
+
+    test('should return 500 on server error', async () => {
+      authService.updateUserRole.mockRejectedValue(new Error('Database error'));
+      jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
+      
+      const response = await request(app)
+        .put('/api/auth/role')
+        .set('x-auth-token', 'valid-token')
+        .send({ userId: '456', role: 'MANAGER' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Server error');
+    });
+  });
+
+  describe('PUT /api/auth/profile-picture', () => {
+    test('should update profile picture', async () => {
+      const mockUpdatedUser = {
+        id: '123',
+        username: 'testuser',
+        profilePictureKey: 'profiles/test.jpg',
+        role: 'EMPLOYEE'
+      };
+      
+      fileUploadService.uploadProfilePicture.mockResolvedValue('profiles/test.jpg');
+      fileUploadService.getSignedUrl.mockResolvedValue('https://profile-picture-url.com');
+      authService.updateProfilePicture.mockResolvedValue(mockUpdatedUser);
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      
+      // Create a mock file using a Buffer
+      const mockFile = {
+        originalname: 'test.jpg',
+        buffer: Buffer.from('test file content'),
+        mimetype: 'image/jpeg'
+      };
+      
+      const response = await request(app)
+        .put('/api/auth/profile-picture')
+        .set('x-auth-token', 'valid-token')
+        .set('x-mock-file', 'true') 
+        .field('someField', 'someValue');
+      
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'Profile picture updated successfully');
+      expect(response.body).toHaveProperty('user', mockUpdatedUser);
+      expect(response.body).toHaveProperty('profilePictureUrl', 'https://profile-picture-url.com');
+    });
+    
+    test('should return 400 if no file uploaded', async () => {
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      
+      const response = await request(app)
+        .put('/api/auth/profile-picture')
+        .set('x-auth-token', 'valid-token');
+      
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message', 'No file uploaded');
+    });
+
+    test('should return 500 if file upload fails', async () => {
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      fileUploadService.uploadProfilePicture.mockRejectedValue(new Error('Upload failed'));
+      
+      const response = await request(app)
+        .put('/api/auth/profile-picture')
+        .set('x-auth-token', 'valid-token')
+        .set('x-mock-file', 'true');
+      
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Upload failed');
     });
   });
 });
