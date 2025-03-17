@@ -1,5 +1,6 @@
 const ticketRepository = require('../repositories/ticketRepository');
 const userRepository = require('../repositories/userRepository');
+const fileUploadService = require('../services/fileUploadService');
 const Ticket = require('../models/Ticket');
 const { TICKET_STATUS, REIMBURSEMENT_TYPES, USER_ROLES } = require('../utils/constants');
 

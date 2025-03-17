@@ -5,20 +5,19 @@ const crypto = require('crypto');
 const path = require('path');
 
 class FileUploadService {
-  generateFileName(originalname) {
-    // Generate a unique filename to prevent collisions
+  generateFileName(originalname, fileType = 'receipts') {
     const timestamp = Date.now();
     const randomString = crypto.randomBytes(8).toString('hex');
     const extension = path.extname(originalname);
-    return `receipts/${timestamp}-${randomString}${extension}`;
+    return `${fileType}/${timestamp}-${randomString}${extension}`;
   }
 
-  async uploadReceipt(file) {
+  async uploadFile(file, fileType = 'receipts') {
     if (!file) {
       throw new Error('No file provided');
     }
 
-    const fileName = this.generateFileName(file.originalname);
+    const fileName = this.generateFileName(file.originalname, fileType);
     
     const uploadParams = {
       Bucket: bucketName,
@@ -31,12 +30,22 @@ class FileUploadService {
       await s3Client.send(new PutObjectCommand(uploadParams));
       return fileName;
     } catch (error) {
-      console.error('Error uploading file to S3:', error);
-      throw new Error('Failed to upload receipt');
+      console.error(`Error uploading ${fileType} to S3:`, error);
+      throw new Error(`Failed to upload ${fileType}`);
     }
   }
 
+  async uploadReceipt(file) {
+    return this.uploadFile(file, 'receipts');
+  }
+
+  async uploadProfilePicture(file) {
+    return this.uploadFile(file, 'profiles');
+  }
+
   async getSignedUrl(key, expirationSeconds = 3600) {
+    if (!key) return null;
+    
     const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: key
@@ -47,7 +56,7 @@ class FileUploadService {
       return url;
     } catch (error) {
       console.error('Error generating signed URL:', error);
-      throw new Error('Failed to generate receipt URL');
+      throw new Error('Failed to generate URL');
     }
   }
 }

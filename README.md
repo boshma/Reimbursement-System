@@ -69,3 +69,4 @@ User Profile/Account
 - Users can edit their account
 - Users can add/replace a profile picture
 - Finance manager can filter requests by status.
+- Managers cannot approve their own tickets.

@@ -50,7 +50,16 @@ exports.login = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const user = await authService.getUserById(req.user.id);
-    res.json({ user });
+    
+    let profilePictureUrl = null;
+    if (user.profilePictureKey) {
+      profilePictureUrl = await fileUploadService.getSignedUrl(user.profilePictureKey);
+    }
+    
+    res.json({ 
+      user,
+      profilePictureUrl 
+    });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -96,5 +105,28 @@ exports.updateUserRole = async (req, res) => {
     }
     console.error('Update user role error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.updateProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    const profilePictureKey = await fileUploadService.uploadProfilePicture(req.file);
+    const updatedUser = await authService.updateProfilePicture(req.user.id, profilePictureKey);
+  
+    const profilePictureUrl = await fileUploadService.getSignedUrl(profilePictureKey);
+    
+    res.json({ 
+      message: 'Profile picture updated successfully', 
+      user: updatedUser,
+      profilePictureUrl
+    });
+    
+  } catch (error) {
+    console.error('Update profile picture error:', error);
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 };

@@ -98,6 +98,19 @@ class AuthService {
     const updatedUser = await userRepository.update(user);
     return updatedUser.sanitize();
   }
+
+  async updateProfilePicture(userId, profilePictureKey) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+  
+    user.profilePictureKey = profilePictureKey;
+    user.updatedAt = new Date().toISOString();
+  
+    const updatedUser = await userRepository.update(user);
+    return updatedUser.sanitize();
+  }
 }
 
 module.exports = new AuthService();
