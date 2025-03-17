@@ -4,13 +4,13 @@ const Ticket = require('../models/Ticket');
 const { TICKET_STATUS, REIMBURSEMENT_TYPES, USER_ROLES } = require('../utils/constants');
 
 class TicketService {
-  async createTicket(userId, ticketData) {
+  async createTicket(userId, ticketData, file = null) {
     if (!ticketData.amount || !ticketData.description) {
       throw new Error('Amount and description are required');
     }
 
-    if (ticketData.reimbursementType && 
-        !Object.values(REIMBURSEMENT_TYPES).includes(ticketData.reimbursementType)) {
+    if (ticketData.reimbursementType &&
+      !Object.values(REIMBURSEMENT_TYPES).includes(ticketData.reimbursementType)) {
       throw new Error('Invalid reimbursement type');
     }
 
@@ -19,27 +19,59 @@ class TicketService {
       throw new Error('User not found');
     }
 
+    let receiptKey = null;
+
+    if (file) {
+      receiptKey = await fileUploadService.uploadReceipt(file);
+    }
+
     const newTicket = new Ticket({
       userId,
       amount: ticketData.amount,
       description: ticketData.description,
       reimbursementType: ticketData.reimbursementType,
+      receiptKey: receiptKey,
       status: TICKET_STATUS.PENDING
     });
 
     return ticketRepository.create(newTicket);
   }
-
   async getUserTickets(userId) {
-    return ticketRepository.findByUser(userId);
+    const tickets = await ticketRepository.findByUser(userId);
+
+    for (const ticket of tickets) {
+      if (ticket.receiptKey) {
+        try {
+          ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
+        } catch (error) {
+          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          ticket.receiptUrl = null;
+        }
+      }
+    }
+
+    return tickets;
   }
 
   async getUserTicketsByType(userId, reimbursementType) {
     if (!Object.values(REIMBURSEMENT_TYPES).includes(reimbursementType)) {
       throw new Error('Invalid reimbursement type');
     }
-    
-    return ticketRepository.findByUserAndType(userId, reimbursementType);
+
+    const tickets = await ticketRepository.findByUserAndType(userId, reimbursementType);
+
+    for (const ticket of tickets) {
+      if (ticket.receiptKey) {
+        try {
+          ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
+        } catch (error) {
+          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          ticket.receiptUrl = null;
+        }
+      }
+    }
+
+    return tickets;
   }
 
   async getTicketById(userId, ticketId) {
@@ -47,6 +79,16 @@ class TicketService {
     if (!ticket) {
       throw new Error('Ticket not found');
     }
+
+    if (ticket.receiptKey) {
+      try {
+        ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
+      } catch (error) {
+        console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+        ticket.receiptUrl = null;
+      }
+    }
+
     return ticket;
   }
 
@@ -54,19 +96,45 @@ class TicketService {
     if (!Object.values(TICKET_STATUS).includes(status)) {
       throw new Error('Invalid ticket status');
     }
-    
-    return ticketRepository.findByStatus(status);
+
+    const tickets = await ticketRepository.findByStatus(status);
+
+    for (const ticket of tickets) {
+      if (ticket.receiptKey) {
+        try {
+          ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
+        } catch (error) {
+          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          ticket.receiptUrl = null;
+        }
+      }
+    }
+
+    return tickets;
   }
 
+
   async getAllTickets() {
-    return ticketRepository.getAllTickets();
+    const tickets = await ticketRepository.getAllTickets();
+
+    for (const ticket of tickets) {
+      if (ticket.receiptKey) {
+        try {
+          ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
+        } catch (error) {
+          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          ticket.receiptUrl = null;
+        }
+      }
+    }
+
+    return tickets;
   }
 
   async processTicket(managerId, userId, ticketId, status) {
     if (!Object.values(TICKET_STATUS).includes(status)) {
       throw new Error('Invalid ticket status');
     }
-    
     const manager = await userRepository.findById(managerId);
     if (!manager || manager.role !== USER_ROLES.MANAGER) {
       throw new Error('Not authorized to process tickets');

@@ -8,7 +8,8 @@ class Ticket {
     amount,
     description,
     status = TICKET_STATUS.PENDING,
-    reimbursementType, // Note: Not defaulting to 'OTHER'
+    reimbursementType,
+    receiptKey = null,
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString(),
     processedBy = null,
@@ -20,6 +21,7 @@ class Ticket {
     this.description = description;
     this.status = status;
     this.reimbursementType = reimbursementType;
+    this.receiptKey = receiptKey;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.processedBy = processedBy;
@@ -36,6 +38,7 @@ class Ticket {
       description: this.description,
       status: this.status,
       reimbursementType: this.reimbursementType,
+      receiptKey: this.receiptKey,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       processedBy: this.processedBy,
@@ -54,6 +57,7 @@ class Ticket {
       description: item.description,
       status: item.status,
       reimbursementType: item.reimbursementType,
+      receiptKey: item.receiptKey,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       processedBy: item.processedBy,

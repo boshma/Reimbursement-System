@@ -3,9 +3,10 @@ const router = express.Router();
 const ticketController = require('../controllers/ticketController');
 const auth = require('../middleware/auth');
 const { isManager } = require('../middleware/roleCheck');
+const upload = require('../middleware/multerUpload');
 
 // Employee routes
-router.post('/', auth, ticketController.createTicket);
+router.post('/', [auth, upload.single('receipt')], ticketController.createTicket);
 router.get('/my', auth, ticketController.getUserTickets);
 router.get('/my/type/:type', auth, ticketController.getTicketsByType);
 

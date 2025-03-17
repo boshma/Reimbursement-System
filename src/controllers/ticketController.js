@@ -9,16 +9,18 @@ exports.createTicket = async (req, res) => {
       return res.status(400).json({ message: 'Amount and description are required' });
     }
     
+    const file = req.file || null;
+    
     const ticket = await ticketService.createTicket(req.user.id, {
       amount,
       description,
       reimbursementType
-    });
+    }, file);
     
     res.status(201).json({ message: 'Ticket created successfully', ticket });
   } catch (error) {
     console.error('Create ticket error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 };
 
