@@ -139,7 +139,11 @@ class TicketService {
     if (!manager || manager.role !== USER_ROLES.MANAGER) {
       throw new Error('Not authorized to process tickets');
     }
-
+    
+    if (managerId === userId) {
+      throw new Error('Managers cannot process their own tickets');
+    }
+  
     return ticketRepository.processTicket(ticketId, userId, managerId, status);
   }
 }

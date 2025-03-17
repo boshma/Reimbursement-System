@@ -228,6 +228,30 @@ describe('Ticket API', () => {
       expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.DENIED);
     });
 
+    it('should not allow managers to process their own tickets', async () => {
+      ticketRepository.findById.mockImplementationOnce(() => 
+        Promise.resolve(new Ticket({ 
+          id: '1', 
+          userId: '2',
+          amount: 100, 
+          description: 'Manager ticket',
+          status: TICKET_STATUS.PENDING
+        }))
+      );
+    
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '2',
+          ticketId: '1',
+          status: TICKET_STATUS.APPROVED
+        });
+    
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Managers cannot process their own tickets');
+    });
+
     it('should return 400 for invalid status', async () => {
       const res = await request(app)
         .get('/api/tickets/status/INVALID')

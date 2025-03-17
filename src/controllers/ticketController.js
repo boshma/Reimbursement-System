@@ -93,7 +93,8 @@ exports.processTicket = async (req, res) => {
   } catch (error) {
     if (error.message === 'Ticket not found' || 
         error.message === 'Invalid ticket status' || 
-        error.message === 'Ticket has already been processed') {
+        error.message === 'Ticket has already been processed' ||
+        error.message === 'Managers cannot process their own tickets') {
       return res.status(400).json({ message: error.message });
     }
     if (error.message === 'Not authorized to process tickets') {

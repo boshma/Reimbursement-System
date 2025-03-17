@@ -22,6 +22,7 @@ Employees can submit a new reimbursement ticket
 - Must have an amount
 - Must have a description
 - Should have a default status of Pending
+- Can provide a receipt
 
 ### Ticketing System Feature
 
@@ -41,6 +42,7 @@ User Story
 
 - As an Employee, I should be able to view all previous reimbursement ticket submissions.
 - Previous tickets should also show the details of submission.
+
 
 ### Reimbursement Types Feature
 
@@ -65,3 +67,5 @@ User Profile/Account
 
 - Track additional user information (name, address, etc.)
 - Users can edit their account
+- Users can add/replace a profile picture
+- Finance manager can filter requests by status.
