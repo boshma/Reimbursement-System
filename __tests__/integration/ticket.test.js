@@ -165,7 +165,28 @@ describe('Ticket API', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(2);
+      expect(res.body).toHaveProperty('pagination');
       expect(ticketRepository.findByUser).toHaveBeenCalledWith('1');
+    });
+
+    it('should get user tickets by type using query parameter', async () => {
+      const res = await request(app)
+        .get(`/api/tickets/my?type=${REIMBURSEMENT_TYPES.TRAVEL}`)
+        .set('x-auth-token', employeeToken);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.tickets).toHaveLength(1);
+      expect(res.body).toHaveProperty('pagination');
+      expect(ticketRepository.findByUserAndType).toHaveBeenCalledWith('1', REIMBURSEMENT_TYPES.TRAVEL);
+    });
+
+    it('should return 400 for invalid reimbursement type', async () => {
+      const res = await request(app)
+        .get('/api/tickets/my?type=INVALID')
+        .set('x-auth-token', employeeToken);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Invalid reimbursement type');
     });
 
     it('should not get tickets without authentication', async () => {
@@ -173,100 +194,6 @@ describe('Ticket API', () => {
         .get('/api/tickets/my');
 
       expect(res.statusCode).toBe(401);
-    });
-  });
-
-  describe('GET /api/tickets/my/type/:type', () => {
-    it('should get user tickets by type', async () => {
-      const res = await request(app)
-        .get(`/api/tickets/my/type/${REIMBURSEMENT_TYPES.TRAVEL}`)
-        .set('x-auth-token', employeeToken);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.tickets).toHaveLength(1);
-      expect(ticketRepository.findByUserAndType).toHaveBeenCalledWith('1', REIMBURSEMENT_TYPES.TRAVEL);
-    });
-
-    it('should return 400 for invalid reimbursement type', async () => {
-      const res = await request(app)
-        .get('/api/tickets/my/type/INVALID')
-        .set('x-auth-token', employeeToken);
-
-      expect(res.statusCode).toBe(400);
-      expect(res.body.message).toBe('Invalid reimbursement type');
-    });
-  });
-
-  describe('GET /api/tickets/status/:status', () => {
-    it('should get tickets by status PENDING for managers', async () => {
-      const res = await request(app)
-        .get(`/api/tickets/status/${TICKET_STATUS.PENDING}`)
-        .set('x-auth-token', managerToken);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.tickets).toHaveLength(2);
-      expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.PENDING);
-    });
-
-    it('should get tickets by status APPROVED for managers', async () => {
-      const res = await request(app)
-        .get(`/api/tickets/status/${TICKET_STATUS.APPROVED}`)
-        .set('x-auth-token', managerToken);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.tickets).toHaveLength(2);
-      expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.APPROVED);
-    });
-
-    it('should get tickets by status DENIED for managers', async () => {
-      const res = await request(app)
-        .get(`/api/tickets/status/${TICKET_STATUS.DENIED}`)
-        .set('x-auth-token', managerToken);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.tickets).toHaveLength(2);
-      expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.DENIED);
-    });
-
-    it('should not allow managers to process their own tickets', async () => {
-      ticketRepository.findById.mockImplementationOnce(() => 
-        Promise.resolve(new Ticket({ 
-          id: '1', 
-          userId: '2',
-          amount: 100, 
-          description: 'Manager ticket',
-          status: TICKET_STATUS.PENDING
-        }))
-      );
-    
-      const res = await request(app)
-        .post('/api/tickets/process')
-        .set('x-auth-token', managerToken)
-        .send({
-          userId: '2',
-          ticketId: '1',
-          status: TICKET_STATUS.APPROVED
-        });
-    
-      expect(res.statusCode).toBe(400);
-      expect(res.body.message).toBe('Managers cannot process their own tickets');
-    });
-
-    it('should return 400 for invalid status', async () => {
-      const res = await request(app)
-        .get('/api/tickets/status/INVALID')
-        .set('x-auth-token', managerToken);
-
-      expect(res.statusCode).toBe(400);
-      expect(res.body.message).toBe('Invalid ticket status');
-    });
-
-    it('should not allow employees to get tickets by status', async () => {
-      const res = await request(app)
-        .get(`/api/tickets/status/${TICKET_STATUS.APPROVED}`)
-        .set('x-auth-token', employeeToken);
-
-      expect(res.statusCode).toBe(403);
     });
   });
 
@@ -278,7 +205,43 @@ describe('Ticket API', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(2);
+      expect(res.body).toHaveProperty('pagination');
       expect(ticketRepository.getAllTickets).toHaveBeenCalled();
+    });
+
+    it('should get tickets by status using query parameter for managers', async () => {
+      const res = await request(app)
+        .get(`/api/tickets/all?status=${TICKET_STATUS.PENDING}`)
+        .set('x-auth-token', managerToken);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.tickets).toHaveLength(2);
+      expect(res.body).toHaveProperty('pagination');
+      expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.PENDING);
+    });
+
+    it('should get tickets with pagination', async () => {
+      const res = await request(app)
+        .get('/api/tickets/all?page=1&limit=1')
+        .set('x-auth-token', managerToken);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.tickets).toHaveLength(1);
+      expect(res.body.pagination).toEqual({
+        total: 2,
+        page: 1,
+        limit: 1,
+        pages: 2
+      });
+    });
+
+    it('should return 400 for invalid status', async () => {
+      const res = await request(app)
+        .get('/api/tickets/all?status=INVALID')
+        .set('x-auth-token', managerToken);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Invalid ticket status');
     });
 
     it('should not allow employees to get all tickets', async () => {

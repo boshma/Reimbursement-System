@@ -26,50 +26,68 @@ exports.createTicket = async (req, res) => {
 
 exports.getUserTickets = async (req, res) => {
   try {
-    const tickets = await ticketService.getUserTickets(req.user.id);
-    res.json({ tickets });
-  } catch (error) {
-    console.error('Get user tickets error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-exports.getTicketsByType = async (req, res) => {
-  try {
-    const { type } = req.params;
+    const { type, page = 1, limit = 10 } = req.query;
+    let tickets;
     
-    const tickets = await ticketService.getUserTicketsByType(req.user.id, type);
-    res.json({ tickets });
+    if (type) {
+      tickets = await ticketService.getUserTicketsByType(req.user.id, type);
+    } else {
+      tickets = await ticketService.getUserTickets(req.user.id);
+    }
+    
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedTickets = tickets.slice(startIndex, endIndex);
+    
+    res.json({ 
+      tickets: paginatedTickets,
+      pagination: {
+        total: tickets.length,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(tickets.length / limit)
+      }
+    });
   } catch (error) {
     if (error.message === 'Invalid reimbursement type') {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Get tickets by type error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-exports.getTicketsByStatus = async (req, res) => {
-  try {
-    const { status } = req.params;
-    
-    const tickets = await ticketService.getTicketsByStatus(status);
-    res.json({ tickets });
-  } catch (error) {
-    if (error.message === 'Invalid ticket status') {
-      return res.status(400).json({ message: error.message });
-    }
-    console.error('Get tickets by status error:', error);
+    console.error('Get user tickets error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 exports.getAllTickets = async (req, res) => {
   try {
-    const tickets = await ticketService.getAllTickets();
-    res.json({ tickets });
+    const { status, page = 1, limit = 10 } = req.query;
+    let tickets;
+    
+    if (status) {
+      tickets = await ticketService.getTicketsByStatus(status);
+    } else {
+      tickets = await ticketService.getAllTickets();
+    }
+    
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedTickets = tickets.slice(startIndex, endIndex);
+    
+    res.json({ 
+      tickets: paginatedTickets,
+      pagination: {
+        total: tickets.length,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(tickets.length / limit)
+      }
+    });
   } catch (error) {
-    console.error('Get all tickets error:', error);
+    if (error.message === 'Invalid ticket status') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Get tickets error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
