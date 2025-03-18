@@ -113,8 +113,12 @@ class TicketRepository {
 
     try {
       const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
+      
+      const startIndex = (page - 1) * limit;
+      const paginatedItems = Items.slice(startIndex, startIndex + limit);
+      
       return {
-        tickets: Items.map(item => Ticket.fromItem(item)),
+        tickets: paginatedItems.map(item => Ticket.fromItem(item)),
         pagination: {
           total: Count,
           scannedCount: ScannedCount
@@ -147,8 +151,12 @@ class TicketRepository {
 
     try {
       const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
+      
+      const startIndex = (page - 1) * limit;
+      const paginatedItems = Items.slice(startIndex, startIndex + limit);
+      
       return {
-        tickets: Items.map(item => Ticket.fromItem(item)),
+        tickets: paginatedItems.map(item => Ticket.fromItem(item)),
         pagination: {
           total: Count,
           scannedCount: ScannedCount
@@ -202,10 +210,13 @@ class TicketRepository {
       const sortedItems = Items.map(item => Ticket.fromItem(item))
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       
+      const startIndex = (page - 1) * limit;
+      const paginatedItems = sortedItems.slice(startIndex, startIndex + limit);
+      
       return {
-        tickets: sortedItems,
+        tickets: paginatedItems,
         pagination: {
-          total: Count,
+          total: sortedItems.length,
           scannedCount: ScannedCount
         }
       };
