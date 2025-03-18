@@ -11,6 +11,7 @@ class User {
     email = '',
     address = '',
     role = USER_ROLES.EMPLOYEE,
+    profilePictureKey = null,
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString()
   }) {
@@ -21,6 +22,7 @@ class User {
     this.lastName = lastName;
     this.email = email;
     this.address = address;
+    this.profilePictureKey = profilePictureKey;
     this.role = role;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -38,6 +40,7 @@ class User {
       lastName: this.lastName,
       email: this.email,
       address: this.address,
+      profilePictureKey: this.profilePictureKey,
       role: this.role,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -56,6 +59,7 @@ class User {
       lastName: item.lastName,
       email: item.email,
       address: item.address,
+      profilePictureKey: item.profilePictureKey,
       role: item.role,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
