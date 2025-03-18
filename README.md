@@ -65,7 +65,7 @@ x-auth-token: your-jwt-token
 
 `POST /api/auth/register`
 
-This endpoint allows users to create a new account.
+This endpoint allows users to create a new account. All new users are registered with the "EMPLOYEE" role by default.
 
 #### Request Headers
 
@@ -94,7 +94,6 @@ This endpoint allows users to create a new account.
 | lastName | string | No | User's last name |
 | email | string | No | User's email address |
 | address | string | No | User's physical address |
-| role | string | No | If "MANAGER", creates a manager user |
 
 #### Response
 
