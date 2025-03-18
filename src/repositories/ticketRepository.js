@@ -63,7 +63,7 @@ class TicketRepository {
     }
   }
 
-  async findByUser(userId) {
+  async findByUser(userId, page = 1, limit = 10) {
     const params = {
       TableName: tableName,
       IndexName: 'UserTicketsIndex',
@@ -75,15 +75,27 @@ class TicketRepository {
     };
 
     try {
-      const { Items } = await dynamoDb.send(new QueryCommand(params));
-      return Items.map(item => Ticket.fromItem(item));
+      const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
+      return {
+        tickets: Items.map(item => Ticket.fromItem(item)),
+        pagination: {
+          total: Count,
+          scannedCount: ScannedCount
+        }
+      };
     } catch (error) {
       console.error('Error finding tickets by user:', error);
-      return [];
+      return {
+        tickets: [],
+        pagination: {
+          total: 0,
+          scannedCount: 0
+        }
+      };
     }
   }
 
-  async findByStatus(status) {
+  async findByStatus(status, page = 1, limit = 10) {
     const params = {
       TableName: tableName,
       IndexName: 'TicketStatusIndex',
@@ -98,15 +110,27 @@ class TicketRepository {
     };
 
     try {
-      const { Items } = await dynamoDb.send(new QueryCommand(params));
-      return Items.map(item => Ticket.fromItem(item));
+      const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
+      return {
+        tickets: Items.map(item => Ticket.fromItem(item)),
+        pagination: {
+          total: Count,
+          scannedCount: ScannedCount
+        }
+      };
     } catch (error) {
       console.error(`Error finding tickets by status ${status}:`, error);
-      return [];
+      return {
+        tickets: [],
+        pagination: {
+          total: 0,
+          scannedCount: 0
+        }
+      };
     }
   }
 
-  async findByUserAndType(userId, reimbursementType) {
+  async findByUserAndType(userId, reimbursementType, page = 1, limit = 10) {
     const params = {
       TableName: tableName,
       IndexName: 'UserTicketsIndex',
@@ -120,14 +144,25 @@ class TicketRepository {
     };
 
     try {
-      const { Items } = await dynamoDb.send(new QueryCommand(params));
-      return Items.map(item => Ticket.fromItem(item));
+      const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
+      return {
+        tickets: Items.map(item => Ticket.fromItem(item)),
+        pagination: {
+          total: Count,
+          scannedCount: ScannedCount
+        }
+      };
     } catch (error) {
       console.error('Error finding tickets by user and type:', error);
-      return [];
+      return {
+        tickets: [],
+        pagination: {
+          total: 0,
+          scannedCount: 0
+        }
+      };
     }
   }
-
 
   async processTicket(ticketId, userId, managerId, status) {
     if (status !== TICKET_STATUS.APPROVED && status !== TICKET_STATUS.DENIED) {
@@ -151,7 +186,7 @@ class TicketRepository {
     return this.update(ticket);
   }
 
-  async getAllTickets() {
+  async getAllTickets(page = 1, limit = 10) {
     const params = {
       TableName: tableName,
       FilterExpression: 'entityType = :entityType',
@@ -161,12 +196,26 @@ class TicketRepository {
     };
     
     try {
-      const { Items } = await dynamoDb.send(new ScanCommand(params));
-      return Items.map(item => Ticket.fromItem(item))
+      const { Items, Count, ScannedCount } = await dynamoDb.send(new ScanCommand(params));
+      const sortedItems = Items.map(item => Ticket.fromItem(item))
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      
+      return {
+        tickets: sortedItems,
+        pagination: {
+          total: Count,
+          scannedCount: ScannedCount
+        }
+      };
     } catch (error) {
       console.error('Error getting all tickets:', error);
-      return [];
+      return {
+        tickets: [],
+        pagination: {
+          total: 0,
+          scannedCount: 0
+        }
+      };
     }
   }
 }

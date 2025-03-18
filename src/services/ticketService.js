@@ -1,7 +1,7 @@
 const ticketRepository = require('../repositories/ticketRepository');
 const userRepository = require('../repositories/userRepository');
-const fileUploadService = require('../services/fileUploadService');
 const Ticket = require('../models/Ticket');
+const fileUploadService = require('../services/fileUploadService');
 const { TICKET_STATUS, REIMBURSEMENT_TYPES, USER_ROLES } = require('../utils/constants');
 
 class TicketService {
@@ -37,8 +37,10 @@ class TicketService {
 
     return ticketRepository.create(newTicket);
   }
-  async getUserTickets(userId) {
-    const tickets = await ticketRepository.findByUser(userId);
+  
+  async getUserTickets(userId, page = 1, limit = 10) {
+    const result = await ticketRepository.findByUser(userId, page, limit);
+    const tickets = result.tickets || [];
 
     for (const ticket of tickets) {
       if (ticket.receiptKey) {
@@ -51,15 +53,19 @@ class TicketService {
       }
     }
 
-    return tickets;
+    return {
+      tickets,
+      pagination: result.pagination || { total: tickets.length }
+    };
   }
 
-  async getUserTicketsByType(userId, reimbursementType) {
+  async getUserTicketsByType(userId, reimbursementType, page = 1, limit = 10) {
     if (!Object.values(REIMBURSEMENT_TYPES).includes(reimbursementType)) {
       throw new Error('Invalid reimbursement type');
     }
 
-    const tickets = await ticketRepository.findByUserAndType(userId, reimbursementType);
+    const result = await ticketRepository.findByUserAndType(userId, reimbursementType, page, limit);
+    const tickets = result.tickets || [];
 
     for (const ticket of tickets) {
       if (ticket.receiptKey) {
@@ -72,7 +78,10 @@ class TicketService {
       }
     }
 
-    return tickets;
+    return {
+      tickets,
+      pagination: result.pagination || { total: tickets.length }
+    };
   }
 
   async getTicketById(userId, ticketId) {
@@ -93,12 +102,13 @@ class TicketService {
     return ticket;
   }
 
-  async getTicketsByStatus(status) {
+  async getTicketsByStatus(status, page = 1, limit = 10) {
     if (!Object.values(TICKET_STATUS).includes(status)) {
       throw new Error('Invalid ticket status');
     }
 
-    const tickets = await ticketRepository.findByStatus(status);
+    const result = await ticketRepository.findByStatus(status, page, limit);
+    const tickets = result.tickets || [];
 
     for (const ticket of tickets) {
       if (ticket.receiptKey) {
@@ -111,12 +121,15 @@ class TicketService {
       }
     }
 
-    return tickets;
+    return {
+      tickets,
+      pagination: result.pagination || { total: tickets.length }
+    };
   }
 
-
-  async getAllTickets() {
-    const tickets = await ticketRepository.getAllTickets();
+  async getAllTickets(page = 1, limit = 10) {
+    const result = await ticketRepository.getAllTickets(page, limit);
+    const tickets = result.tickets || [];
 
     for (const ticket of tickets) {
       if (ticket.receiptKey) {
@@ -129,7 +142,10 @@ class TicketService {
       }
     }
 
-    return tickets;
+    return {
+      tickets,
+      pagination: result.pagination || { total: tickets.length }
+    };
   }
 
   async processTicket(managerId, userId, ticketId, status) {
@@ -140,11 +156,12 @@ class TicketService {
     if (!manager || manager.role !== USER_ROLES.MANAGER) {
       throw new Error('Not authorized to process tickets');
     }
-    
+
+    // Check if manager is trying to process their own ticket
     if (managerId === userId) {
       throw new Error('Managers cannot process their own tickets');
     }
-  
+
     return ticketRepository.processTicket(ticketId, userId, managerId, status);
   }
 }

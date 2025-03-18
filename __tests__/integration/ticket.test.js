@@ -49,37 +49,62 @@ describe('Ticket API', () => {
 
     ticketRepository.create = jest.fn().mockImplementation(ticket => Promise.resolve(ticket));
     
+    // Update mock implementations for pagination
     ticketRepository.findByUser = jest.fn().mockImplementation(() => 
-      Promise.resolve([
-        new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' }),
-        new Ticket({ id: '2', userId: '1', amount: 200, description: 'Another ticket' })
-      ])
+      Promise.resolve({
+        tickets: [
+          new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' }),
+          new Ticket({ id: '2', userId: '1', amount: 200, description: 'Another ticket' })
+        ],
+        pagination: {
+          total: 2,
+          scannedCount: 2
+        }
+      })
     );
     
     ticketRepository.findByUserAndType = jest.fn().mockImplementation((userId, type) => 
-      Promise.resolve([
-        new Ticket({ 
-          id: '1', 
-          userId, 
-          amount: 100, 
-          description: 'Test ticket', 
-          reimbursementType: type 
-        })
-      ])
+      Promise.resolve({
+        tickets: [
+          new Ticket({ 
+            id: '1', 
+            userId, 
+            amount: 100, 
+            description: 'Test ticket', 
+            reimbursementType: type 
+          })
+        ],
+        pagination: {
+          total: 1,
+          scannedCount: 1
+        }
+      })
     );
     
     ticketRepository.findByStatus = jest.fn().mockImplementation(status => 
-      Promise.resolve([
-        new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket', status }),
-        new Ticket({ id: '2', userId: '3', amount: 300, description: 'Other ticket', status })
-      ])
+      Promise.resolve({
+        tickets: [
+          new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket', status }),
+          new Ticket({ id: '2', userId: '3', amount: 300, description: 'Other ticket', status })
+        ],
+        pagination: {
+          total: 2,
+          scannedCount: 2
+        }
+      })
     );
     
     ticketRepository.getAllTickets = jest.fn().mockImplementation(() => 
-      Promise.resolve([
-        new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' }),
-        new Ticket({ id: '2', userId: '3', amount: 300, description: 'Other ticket' })
-      ])
+      Promise.resolve({
+        tickets: [
+          new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' }),
+          new Ticket({ id: '2', userId: '3', amount: 300, description: 'Other ticket' })
+        ],
+        pagination: {
+          total: 2,
+          scannedCount: 2
+        }
+      })
     );
     
     ticketRepository.findById = jest.fn().mockImplementation((userId, ticketId) => 
@@ -166,7 +191,7 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(2);
       expect(res.body).toHaveProperty('pagination');
-      expect(ticketRepository.findByUser).toHaveBeenCalledWith('1');
+      expect(ticketRepository.findByUser).toHaveBeenCalledWith('1', 1, 10);
     });
 
     it('should get user tickets by type using query parameter', async () => {
@@ -177,7 +202,7 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(1);
       expect(res.body).toHaveProperty('pagination');
-      expect(ticketRepository.findByUserAndType).toHaveBeenCalledWith('1', REIMBURSEMENT_TYPES.TRAVEL);
+      expect(ticketRepository.findByUserAndType).toHaveBeenCalledWith('1', REIMBURSEMENT_TYPES.TRAVEL, 1, 10);
     });
 
     it('should return 400 for invalid reimbursement type', async () => {
@@ -206,7 +231,7 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(2);
       expect(res.body).toHaveProperty('pagination');
-      expect(ticketRepository.getAllTickets).toHaveBeenCalled();
+      expect(ticketRepository.getAllTickets).toHaveBeenCalledWith(1, 10);
     });
 
     it('should get tickets by status using query parameter for managers', async () => {
@@ -217,22 +242,36 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(2);
       expect(res.body).toHaveProperty('pagination');
-      expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.PENDING);
+      expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.PENDING, 1, 10);
     });
 
     it('should get tickets with pagination', async () => {
+      // Mock implementation specific for this test
+      ticketRepository.getAllTickets.mockImplementationOnce(() => 
+        Promise.resolve({
+          tickets: [
+            new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' })
+          ],
+          pagination: {
+            total: 2,
+            scannedCount: 2
+          }
+        })
+      );
+      
       const res = await request(app)
         .get('/api/tickets/all?page=1&limit=1')
         .set('x-auth-token', managerToken);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.tickets).toHaveLength(1);
-      expect(res.body.pagination).toEqual({
+      expect(res.body.pagination).toEqual(expect.objectContaining({
         total: 2,
         page: 1,
         limit: 1,
         pages: 2
-      });
+      }));
+      expect(ticketRepository.getAllTickets).toHaveBeenCalledWith(1, 1);
     });
 
     it('should return 400 for invalid status', async () => {
@@ -333,6 +372,7 @@ describe('Ticket API', () => {
         { expiresIn: '1h' }
       );
       
+      // Mock database error for the first call to findByUser
       ticketRepository.findByUser.mockRejectedValueOnce(new Error('Database error'));
     });
     

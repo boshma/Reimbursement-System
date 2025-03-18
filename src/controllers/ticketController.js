@@ -27,26 +27,33 @@ exports.createTicket = async (req, res) => {
 exports.getUserTickets = async (req, res) => {
   try {
     const { type, page = 1, limit = 10 } = req.query;
-    let tickets;
+    let result;
     
     if (type) {
-      tickets = await ticketService.getUserTicketsByType(req.user.id, type);
+      result = await ticketService.getUserTicketsByType(
+        req.user.id, 
+        type, 
+        parseInt(page), 
+        parseInt(limit)
+      );
     } else {
-      tickets = await ticketService.getUserTickets(req.user.id);
+      result = await ticketService.getUserTickets(
+        req.user.id, 
+        parseInt(page), 
+        parseInt(limit)
+      );
     }
     
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedTickets = tickets.slice(startIndex, endIndex);
+    // Calculate total pages
+    const totalPages = Math.ceil(result.pagination.total / parseInt(limit));
     
     res.json({ 
-      tickets: paginatedTickets,
+      tickets: result.tickets,
       pagination: {
-        total: tickets.length,
+        total: result.pagination.total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(tickets.length / limit)
+        pages: totalPages
       }
     });
   } catch (error) {
@@ -61,26 +68,31 @@ exports.getUserTickets = async (req, res) => {
 exports.getAllTickets = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
-    let tickets;
+    let result;
     
     if (status) {
-      tickets = await ticketService.getTicketsByStatus(status);
+      result = await ticketService.getTicketsByStatus(
+        status, 
+        parseInt(page), 
+        parseInt(limit)
+      );
     } else {
-      tickets = await ticketService.getAllTickets();
+      result = await ticketService.getAllTickets(
+        parseInt(page), 
+        parseInt(limit)
+      );
     }
     
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedTickets = tickets.slice(startIndex, endIndex);
+    // Calculate total pages
+    const totalPages = Math.ceil(result.pagination.total / parseInt(limit));
     
     res.json({ 
-      tickets: paginatedTickets,
+      tickets: result.tickets,
       pagination: {
-        total: tickets.length,
+        total: result.pagination.total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(tickets.length / limit)
+        pages: totalPages
       }
     });
   } catch (error) {
