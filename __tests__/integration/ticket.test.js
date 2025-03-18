@@ -79,6 +79,7 @@ describe('Ticket API', () => {
         }
       })
     );
+    
     ticketRepository.findByStatus = jest.fn().mockImplementation(status =>
       Promise.resolve({
         tickets: [
@@ -91,6 +92,7 @@ describe('Ticket API', () => {
         }
       })
     );
+    
     ticketRepository.getAllTickets = jest.fn().mockImplementation(() =>
       Promise.resolve({
         tickets: [
@@ -103,6 +105,7 @@ describe('Ticket API', () => {
         }
       })
     );
+    
     ticketRepository.findById = jest.fn().mockImplementation((userId, ticketId) =>
       Promise.resolve(
         new Ticket({
@@ -114,6 +117,7 @@ describe('Ticket API', () => {
         })
       )
     );
+    
     ticketRepository.processTicket = jest.fn().mockImplementation((ticketId, userId, managerId, status) =>
       Promise.resolve(
         new Ticket({
@@ -134,7 +138,7 @@ describe('Ticket API', () => {
   });
 
   describe('POST /api/tickets', () => {
-    it('should create a new ticket', async () => {
+    test('should create a new ticket', async () => {
       const res = await request(app)
         .post('/api/tickets')
         .set('x-auth-token', employeeToken)
@@ -154,7 +158,7 @@ describe('Ticket API', () => {
     });
 
     // Test with a string amount
-    it('should convert string amount to number when creating a ticket', async () => {
+    test('should convert string amount to number when creating a ticket', async () => {
       const res = await request(app)
         .post('/api/tickets')
         .set('x-auth-token', employeeToken)
@@ -169,7 +173,7 @@ describe('Ticket API', () => {
       expect(typeof res.body.ticket.amount).toBe('number');
     });
 
-    it('should not create a ticket without amount or description', async () => {
+    test('should not create a ticket without amount or description', async () => {
       const res = await request(app)
         .post('/api/tickets')
         .set('x-auth-token', employeeToken)
@@ -181,7 +185,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Amount and description are required');
     });
 
-    it('should not create a ticket without authentication', async () => {
+    test('should not create a ticket without authentication', async () => {
       const res = await request(app)
         .post('/api/tickets')
         .send({
@@ -191,10 +195,46 @@ describe('Ticket API', () => {
 
       expect(res.statusCode).toBe(401);
     });
+    
+    test('should handle invalid reimbursement type error', async () => {
+      ticketRepository.create.mockImplementationOnce(() => {
+        throw new Error('Invalid reimbursement type');
+      });
+
+      const res = await request(app)
+        .post('/api/tickets')
+        .set('x-auth-token', employeeToken)
+        .send({
+          amount: 100,
+          description: 'Test ticket with invalid type',
+          reimbursementType: 'INVALID_TYPE'
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Invalid reimbursement type');
+    });
+
+    test('should handle other server errors when creating tickets', async () => {
+      ticketRepository.create.mockImplementationOnce(() => {
+        throw new Error('Some unexpected server error');
+      });
+
+      const res = await request(app)
+        .post('/api/tickets')
+        .set('x-auth-token', employeeToken)
+        .send({
+          amount: 100,
+          description: 'Test ticket',
+          reimbursementType: REIMBURSEMENT_TYPES.TRAVEL
+        });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Some unexpected server error');
+    });
   });
 
   describe('GET /api/tickets/my', () => {
-    it('should get all user tickets', async () => {
+    test('should get all user tickets', async () => {
       const res = await request(app)
         .get('/api/tickets/my')
         .set('x-auth-token', employeeToken);
@@ -209,7 +249,7 @@ describe('Ticket API', () => {
       expect(typeof res.body.tickets[1].amount).toBe('number');
     });
 
-    it('should get user tickets by type using query parameter', async () => {
+    test('should get user tickets by type using query parameter', async () => {
       const res = await request(app)
         .get(`/api/tickets/my?type=${REIMBURSEMENT_TYPES.TRAVEL}`)
         .set('x-auth-token', employeeToken);
@@ -223,7 +263,7 @@ describe('Ticket API', () => {
       expect(typeof res.body.tickets[0].amount).toBe('number');
     });
 
-    it('should return 400 for invalid reimbursement type', async () => {
+    test('should return 400 for invalid reimbursement type', async () => {
       const res = await request(app)
         .get('/api/tickets/my?type=INVALID')
         .set('x-auth-token', employeeToken);
@@ -232,15 +272,16 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Invalid reimbursement type');
     });
 
-    it('should not get tickets without authentication', async () => {
+    test('should not get tickets without authentication', async () => {
       const res = await request(app)
         .get('/api/tickets/my');
 
       expect(res.statusCode).toBe(401);
     });
   });
+  
   describe('GET /api/tickets/all', () => {
-    it('should get all tickets for managers', async () => {
+    test('should get all tickets for managers', async () => {
       const res = await request(app)
         .get('/api/tickets/all')
         .set('x-auth-token', managerToken);
@@ -251,7 +292,7 @@ describe('Ticket API', () => {
       expect(ticketRepository.getAllTickets).toHaveBeenCalledWith(1, 10);
     });
 
-    it('should get tickets by status using query parameter for managers', async () => {
+    test('should get tickets by status using query parameter for managers', async () => {
       const res = await request(app)
         .get(`/api/tickets/all?status=${TICKET_STATUS.PENDING}`)
         .set('x-auth-token', managerToken);
@@ -262,7 +303,7 @@ describe('Ticket API', () => {
       expect(ticketRepository.findByStatus).toHaveBeenCalledWith(TICKET_STATUS.PENDING, 1, 10);
     });
 
-    it('should get tickets with pagination', async () => {
+    test('should get tickets with pagination', async () => {
       // Mock implementation specific for this test
       ticketRepository.getAllTickets.mockImplementationOnce(() =>
         Promise.resolve({
@@ -291,7 +332,7 @@ describe('Ticket API', () => {
       expect(ticketRepository.getAllTickets).toHaveBeenCalledWith(1, 1);
     });
 
-    it('should return 400 for invalid status', async () => {
+    test('should return 400 for invalid status', async () => {
       const res = await request(app)
         .get('/api/tickets/all?status=INVALID')
         .set('x-auth-token', managerToken);
@@ -300,7 +341,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Invalid ticket status');
     });
 
-    it('should not allow employees to get all tickets', async () => {
+    test('should not allow employees to get all tickets', async () => {
       const res = await request(app)
         .get('/api/tickets/all')
         .set('x-auth-token', employeeToken);
@@ -310,7 +351,7 @@ describe('Ticket API', () => {
   });
 
   describe('POST /api/tickets/process', () => {
-    it('should process a ticket as a manager with APPROVED status', async () => {
+    test('should process a ticket as a manager with APPROVED status', async () => {
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -328,7 +369,7 @@ describe('Ticket API', () => {
       expect(ticketRepository.processTicket).toHaveBeenCalledWith('1', '1', '2', TICKET_STATUS.APPROVED);
     });
 
-    it('should process a ticket as a manager with DENIED status', async () => {
+    test('should process a ticket as a manager with DENIED status', async () => {
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -346,7 +387,7 @@ describe('Ticket API', () => {
       expect(ticketRepository.processTicket).toHaveBeenCalledWith('1', '1', '2', TICKET_STATUS.DENIED);
     });
 
-    it('should not allow employees to process tickets', async () => {
+    test('should not allow employees to process tickets', async () => {
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', employeeToken)
@@ -359,7 +400,7 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(403);
     });
 
-    it('should return 400 for invalid status', async () => {
+    test('should return 400 for invalid status', async () => {
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -370,6 +411,22 @@ describe('Ticket API', () => {
         });
 
       expect(res.statusCode).toBe(400);
+    });
+    
+    test('should handle not authorized to process tickets', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Not authorized to process tickets'));
+
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1',
+          ticketId: '1',
+          status: TICKET_STATUS.APPROVED
+        });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.message).toBe('Not authorized to process tickets');
     });
   });
 
@@ -388,12 +445,11 @@ describe('Ticket API', () => {
         process.env.JWT_SECRET || 'testsecret',
         { expiresIn: '1h' }
       );
-
-      // Mock database error for the first call to findByUser
+      
       ticketRepository.findByUser.mockRejectedValueOnce(new Error('Database error'));
     });
 
-    it('should handle errors when creating tickets', async () => {
+    test('should handle errors when creating tickets', async () => {
       const res = await request(app)
         .post('/api/tickets')
         .set('x-auth-token', employeeToken)
@@ -405,7 +461,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Amount and description are required');
     });
 
-    it('should handle database errors when fetching tickets', async () => {
+    test('should handle database errors when fetching tickets', async () => {
       const res = await request(app)
         .get('/api/tickets/my')
         .set('x-auth-token', employeeToken);
@@ -414,7 +470,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Server error');
     });
 
-    it('should handle missing fields in ticket processing', async () => {
+    test('should handle missing fields in ticket processing', async () => {
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -426,7 +482,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('User ID, ticket ID, and status are required');
     });
 
-    it('should handle ticket not found when processing', async () => {
+    test('should handle ticket not found when processing', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket not found'));
 
       const res = await request(app)
@@ -442,7 +498,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Ticket not found');
     });
 
-    it('should handle already processed tickets', async () => {
+    test('should handle already processed tickets', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket has already been processed'));
 
       const res = await request(app)
@@ -458,7 +514,7 @@ describe('Ticket API', () => {
       expect(res.body.message).toBe('Ticket has already been processed');
     });
 
-    it('should handle managers trying to process their own tickets', async () => {
+    test('should handle managers trying to process their own tickets', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Managers cannot process their own tickets'));
 
       const res = await request(app)
@@ -472,6 +528,22 @@ describe('Ticket API', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Managers cannot process their own tickets');
+    });
+
+    test('should handle general server errors during ticket processing', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Unexpected database error'));
+
+      const res = await request(app)
+        .post('/api/tickets/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1',
+          ticketId: '1',
+          status: TICKET_STATUS.APPROVED
+        });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Server error');
     });
   });
 });

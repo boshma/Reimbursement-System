@@ -20,6 +20,11 @@ exports.createTicket = async (req, res) => {
     res.status(201).json({ message: 'Ticket created successfully', ticket });
   } catch (error) {
     console.error('Create ticket error:', error);
+    
+    if (error.message === 'Invalid reimbursement type') {
+      return res.status(400).json({ message: error.message });
+    }
+    
     res.status(500).json({ message: error.message || 'Server error' });
   }
 };
