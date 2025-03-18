@@ -111,8 +111,8 @@ exports.updateUserRole = async (req, res) => {
 
 exports.updateProfilePicture = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+    if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
+      return res.status(400).json({ message: 'No file uploaded or file is empty' });
     }
     
     const profilePictureKey = await fileUploadService.uploadProfilePicture(req.file);
@@ -131,3 +131,4 @@ exports.updateProfilePicture = async (req, res) => {
     res.status(500).json({ message: error.message || 'Server error' });
   }
 };
+

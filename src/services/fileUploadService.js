@@ -13,10 +13,10 @@ class FileUploadService {
   }
 
   async uploadFile(file, fileType = 'receipts') {
-    if (!file) {
-      throw new Error('No file provided');
+    if (!file || !file.buffer || file.buffer.length === 0) {
+      throw new Error('No file provided or file is empty');
     }
-
+  
     const fileName = this.generateFileName(file.originalname, fileType);
     
     const uploadParams = {
@@ -25,7 +25,7 @@ class FileUploadService {
       Body: file.buffer,
       ContentType: file.mimetype
     };
-
+  
     try {
       await s3Client.send(new PutObjectCommand(uploadParams));
       return fileName;
