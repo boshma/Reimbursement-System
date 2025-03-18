@@ -68,8 +68,10 @@ class TicketRepository {
       TableName: tableName,
       IndexName: 'UserTicketsIndex',
       KeyConditionExpression: 'userId = :userId',
+      FilterExpression: 'entityType = :entityType',
       ExpressionAttributeValues: {
-        ':userId': userId
+        ':userId': userId,
+        ':entityType': 'TICKET'
       },
       ScanIndexForward: true
     };
