@@ -5,7 +5,7 @@ exports.createTicket = async (req, res) => {
   try {
     const { amount, description, reimbursementType } = req.body;
     
-    if (!amount || !description) {
+    if (!amount || !description || description.trim() === '') {
       return res.status(400).json({ message: 'Amount and description are required' });
     }
     

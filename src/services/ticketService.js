@@ -6,7 +6,7 @@ const { TICKET_STATUS, REIMBURSEMENT_TYPES, USER_ROLES } = require('../utils/con
 
 class TicketService {
   async createTicket(userId, ticketData, file = null) {
-    if (!ticketData.amount || !ticketData.description) {
+    if (!ticketData.amount || !ticketData.description || ticketData.description.trim() === '') {
       throw new Error('Amount and description are required');
     }
 
