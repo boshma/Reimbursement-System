@@ -17,7 +17,7 @@ class Ticket {
   }) {
     this.id = id;
     this.userId = userId;
-    this.amount = amount;
+    this.amount = typeof amount === 'number' ? amount : Number(amount);
     this.description = description;
     this.status = status;
     this.reimbursementType = reimbursementType;
@@ -53,7 +53,7 @@ class Ticket {
     return new Ticket({
       id: item.id,
       userId: item.userId,
-      amount: item.amount,
+      amount: typeof item.amount === 'number' ? item.amount : Number(item.amount),
       description: item.description,
       status: item.status,
       reimbursementType: item.reimbursementType,

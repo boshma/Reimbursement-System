@@ -19,7 +19,6 @@ describe('Ticket API', () => {
     username: 'employee',
     role: USER_ROLES.EMPLOYEE
   });
-  
   const managerUser = new User({
     id: '2',
     username: 'manager',
@@ -48,9 +47,9 @@ describe('Ticket API', () => {
     });
 
     ticketRepository.create = jest.fn().mockImplementation(ticket => Promise.resolve(ticket));
-    
+
     // Update mock implementations for pagination
-    ticketRepository.findByUser = jest.fn().mockImplementation(() => 
+    ticketRepository.findByUser = jest.fn().mockImplementation(() =>
       Promise.resolve({
         tickets: [
           new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' }),
@@ -62,16 +61,16 @@ describe('Ticket API', () => {
         }
       })
     );
-    
-    ticketRepository.findByUserAndType = jest.fn().mockImplementation((userId, type) => 
+
+    ticketRepository.findByUserAndType = jest.fn().mockImplementation((userId, type) =>
       Promise.resolve({
         tickets: [
-          new Ticket({ 
-            id: '1', 
-            userId, 
-            amount: 100, 
-            description: 'Test ticket', 
-            reimbursementType: type 
+          new Ticket({
+            id: '1',
+            userId,
+            amount: 100,
+            description: 'Test ticket',
+            reimbursementType: type
           })
         ],
         pagination: {
@@ -80,8 +79,7 @@ describe('Ticket API', () => {
         }
       })
     );
-    
-    ticketRepository.findByStatus = jest.fn().mockImplementation(status => 
+    ticketRepository.findByStatus = jest.fn().mockImplementation(status =>
       Promise.resolve({
         tickets: [
           new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket', status }),
@@ -93,8 +91,7 @@ describe('Ticket API', () => {
         }
       })
     );
-    
-    ticketRepository.getAllTickets = jest.fn().mockImplementation(() => 
+    ticketRepository.getAllTickets = jest.fn().mockImplementation(() =>
       Promise.resolve({
         tickets: [
           new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' }),
@@ -106,25 +103,23 @@ describe('Ticket API', () => {
         }
       })
     );
-    
-    ticketRepository.findById = jest.fn().mockImplementation((userId, ticketId) => 
+    ticketRepository.findById = jest.fn().mockImplementation((userId, ticketId) =>
       Promise.resolve(
-        new Ticket({ 
-          id: ticketId, 
-          userId, 
-          amount: 100, 
+        new Ticket({
+          id: ticketId,
+          userId,
+          amount: 100,
           description: 'Test ticket',
           status: TICKET_STATUS.PENDING
         })
       )
     );
-    
-    ticketRepository.processTicket = jest.fn().mockImplementation((ticketId, userId, managerId, status) => 
+    ticketRepository.processTicket = jest.fn().mockImplementation((ticketId, userId, managerId, status) =>
       Promise.resolve(
-        new Ticket({ 
-          id: ticketId, 
-          userId, 
-          amount: 100, 
+        new Ticket({
+          id: ticketId,
+          userId,
+          amount: 100,
           description: 'Test ticket',
           status,
           processedBy: managerId,
@@ -152,10 +147,26 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(201);
       expect(res.body.message).toBe('Ticket created successfully');
       expect(res.body.ticket).toHaveProperty('id');
-      expect(res.body.ticket.amount).toBe(100);
+      expect(res.body.ticket.amount).toBe(100);  // This should already be a number
       expect(res.body.ticket.description).toBe('Test ticket');
       expect(res.body.ticket.reimbursementType).toBe(REIMBURSEMENT_TYPES.TRAVEL);
       expect(res.body.ticket.status).toBe(TICKET_STATUS.PENDING);
+    });
+
+    // Test with a string amount
+    it('should convert string amount to number when creating a ticket', async () => {
+      const res = await request(app)
+        .post('/api/tickets')
+        .set('x-auth-token', employeeToken)
+        .send({
+          amount: "150", // String amount
+          description: 'Test ticket with string amount',
+          reimbursementType: REIMBURSEMENT_TYPES.TRAVEL
+        });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body.ticket.amount).toBe(150); // Should be converted to number
+      expect(typeof res.body.ticket.amount).toBe('number');
     });
 
     it('should not create a ticket without amount or description', async () => {
@@ -192,6 +203,10 @@ describe('Ticket API', () => {
       expect(res.body.tickets).toHaveLength(2);
       expect(res.body).toHaveProperty('pagination');
       expect(ticketRepository.findByUser).toHaveBeenCalledWith('1', 1, 10);
+
+      // Verify amount is a number
+      expect(typeof res.body.tickets[0].amount).toBe('number');
+      expect(typeof res.body.tickets[1].amount).toBe('number');
     });
 
     it('should get user tickets by type using query parameter', async () => {
@@ -203,6 +218,9 @@ describe('Ticket API', () => {
       expect(res.body.tickets).toHaveLength(1);
       expect(res.body).toHaveProperty('pagination');
       expect(ticketRepository.findByUserAndType).toHaveBeenCalledWith('1', REIMBURSEMENT_TYPES.TRAVEL, 1, 10);
+
+      // Verify amount is a number
+      expect(typeof res.body.tickets[0].amount).toBe('number');
     });
 
     it('should return 400 for invalid reimbursement type', async () => {
@@ -221,7 +239,6 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(401);
     });
   });
-
   describe('GET /api/tickets/all', () => {
     it('should get all tickets for managers', async () => {
       const res = await request(app)
@@ -247,7 +264,7 @@ describe('Ticket API', () => {
 
     it('should get tickets with pagination', async () => {
       // Mock implementation specific for this test
-      ticketRepository.getAllTickets.mockImplementationOnce(() => 
+      ticketRepository.getAllTickets.mockImplementationOnce(() =>
         Promise.resolve({
           tickets: [
             new Ticket({ id: '1', userId: '1', amount: 100, description: 'Test ticket' })
@@ -258,7 +275,7 @@ describe('Ticket API', () => {
           }
         })
       );
-      
+
       const res = await request(app)
         .get('/api/tickets/all?page=1&limit=1')
         .set('x-auth-token', managerToken);
@@ -358,24 +375,24 @@ describe('Ticket API', () => {
 
   describe('Error handling in Ticket API', () => {
     let employeeToken, managerToken;
-    
+
     beforeEach(() => {
       employeeToken = jwt.sign(
         { user: { id: '1', username: 'employee', role: USER_ROLES.EMPLOYEE } },
         process.env.JWT_SECRET || 'testsecret',
         { expiresIn: '1h' }
       );
-  
+
       managerToken = jwt.sign(
         { user: { id: '2', username: 'manager', role: USER_ROLES.MANAGER } },
         process.env.JWT_SECRET || 'testsecret',
         { expiresIn: '1h' }
       );
-      
+
       // Mock database error for the first call to findByUser
       ticketRepository.findByUser.mockRejectedValueOnce(new Error('Database error'));
     });
-    
+
     it('should handle errors when creating tickets', async () => {
       const res = await request(app)
         .post('/api/tickets')
@@ -383,20 +400,20 @@ describe('Ticket API', () => {
         .send({
           description: 'Test ticket'
         });
-      
+
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Amount and description are required');
     });
-    
+
     it('should handle database errors when fetching tickets', async () => {
       const res = await request(app)
         .get('/api/tickets/my')
         .set('x-auth-token', employeeToken);
-      
+
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Server error');
     });
-    
+
     it('should handle missing fields in ticket processing', async () => {
       const res = await request(app)
         .post('/api/tickets/process')
@@ -404,14 +421,14 @@ describe('Ticket API', () => {
         .send({
           userId: '1'
         });
-      
+
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('User ID, ticket ID, and status are required');
     });
-    
+
     it('should handle ticket not found when processing', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket not found'));
-      
+
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -420,14 +437,14 @@ describe('Ticket API', () => {
           ticketId: '999',
           status: TICKET_STATUS.APPROVED
         });
-      
+
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Ticket not found');
     });
-    
+
     it('should handle already processed tickets', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket has already been processed'));
-      
+
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -436,14 +453,14 @@ describe('Ticket API', () => {
           ticketId: '1',
           status: TICKET_STATUS.APPROVED
         });
-      
+
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Ticket has already been processed');
     });
-    
+
     it('should handle managers trying to process their own tickets', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Managers cannot process their own tickets'));
-      
+
       const res = await request(app)
         .post('/api/tickets/process')
         .set('x-auth-token', managerToken)
@@ -452,7 +469,7 @@ describe('Ticket API', () => {
           ticketId: '3',
           status: TICKET_STATUS.APPROVED
         });
-      
+
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Managers cannot process their own tickets');
     });
