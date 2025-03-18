@@ -751,9 +751,15 @@ This endpoint allows managers to view all tickets in the system.
 
 ### 2.4 Process a Ticket (Manager Only)
 
-`POST /api/tickets/process`
+`PUT /api/tickets/:ticketId/process`
 
 This endpoint allows managers to approve or deny a ticket.
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| ticketId | string | Yes | ID of the ticket to process |
 
 #### Request Headers
 
@@ -767,7 +773,6 @@ This endpoint allows managers to approve or deny a ticket.
 ```json
 {
     "userId": "38c83721-e03e-4e82-bc56-13fc97efdebd",
-    "ticketId": "8515734d-2374-46ab-8ab9-1df911e72ac2",
     "status": "APPROVED"
 }
 ```

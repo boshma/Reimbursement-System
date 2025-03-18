@@ -75,7 +75,7 @@ describe('Ticket API', () => {
         }
       })
     );
-    
+
     ticketRepository.findByStatus = jest.fn().mockImplementation(status =>
       Promise.resolve({
         tickets: [
@@ -88,7 +88,7 @@ describe('Ticket API', () => {
         }
       })
     );
-    
+
     ticketRepository.getAllTickets = jest.fn().mockImplementation(() =>
       Promise.resolve({
         tickets: [
@@ -101,7 +101,7 @@ describe('Ticket API', () => {
         }
       })
     );
-    
+
     ticketRepository.findById = jest.fn().mockImplementation((userId, ticketId) =>
       Promise.resolve(
         new Ticket({
@@ -113,7 +113,7 @@ describe('Ticket API', () => {
         })
       )
     );
-    
+
     ticketRepository.processTicket = jest.fn().mockImplementation((ticketId, userId, managerId, status) =>
       Promise.resolve(
         new Ticket({
@@ -190,7 +190,7 @@ describe('Ticket API', () => {
 
       expect(res.statusCode).toBe(401);
     });
-    
+
     test('should handle invalid reimbursement type error', async () => {
       ticketRepository.create.mockImplementationOnce(() => {
         throw new Error('Invalid reimbursement type');
@@ -272,7 +272,7 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(401);
     });
   });
-  
+
   describe('GET /api/tickets/all', () => {
     test('should get all tickets for managers', async () => {
       const res = await request(app)
@@ -342,14 +342,13 @@ describe('Ticket API', () => {
     });
   });
 
-  describe('POST /api/tickets/process', () => {
+  describe('PUT /api/tickets/:ticketId/process', () => {
     test('should process a ticket as a manager with APPROVED status', async () => {
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: TICKET_STATUS.APPROVED
         });
 
@@ -363,11 +362,10 @@ describe('Ticket API', () => {
 
     test('should process a ticket as a manager with DENIED status', async () => {
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: TICKET_STATUS.DENIED
         });
 
@@ -381,11 +379,10 @@ describe('Ticket API', () => {
 
     test('should not allow employees to process tickets', async () => {
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', employeeToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: TICKET_STATUS.APPROVED
         });
 
@@ -394,31 +391,101 @@ describe('Ticket API', () => {
 
     test('should return 400 for invalid status', async () => {
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: 'INVALID'
         });
 
       expect(res.statusCode).toBe(400);
     });
-    
+
     test('should handle not authorized to process tickets', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Not authorized to process tickets'));
 
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: TICKET_STATUS.APPROVED
         });
 
       expect(res.statusCode).toBe(403);
       expect(res.body.message).toBe('Not authorized to process tickets');
+    });
+
+    test('should handle missing fields in ticket processing', async () => {
+      const res = await request(app)
+        .put('/api/tickets/1/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1'
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('User ID and status are required');
+    });
+
+    test('should handle ticket not found when processing', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket not found'));
+
+      const res = await request(app)
+        .put('/api/tickets/999/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '999',
+          status: TICKET_STATUS.APPROVED
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Ticket not found');
+    });
+
+    test('should handle already processed tickets', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket has already been processed'));
+
+      const res = await request(app)
+        .put('/api/tickets/1/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1',
+          status: TICKET_STATUS.APPROVED
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Ticket has already been processed');
+    });
+
+    test('should handle managers trying to process their own tickets', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Managers cannot process their own tickets'));
+
+      const res = await request(app)
+        .put('/api/tickets/3/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '2',
+          status: TICKET_STATUS.APPROVED
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Managers cannot process their own tickets');
+    });
+
+    test('should handle general server errors during ticket processing', async () => {
+      ticketRepository.processTicket.mockRejectedValueOnce(new Error('Unexpected database error'));
+
+      const res = await request(app)
+        .put('/api/tickets/1/process')
+        .set('x-auth-token', managerToken)
+        .send({
+          userId: '1',
+          status: TICKET_STATUS.APPROVED
+        });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Server error');
     });
   });
 
@@ -464,25 +531,24 @@ describe('Ticket API', () => {
 
     test('should handle missing fields in ticket processing', async () => {
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1'
         });
 
       expect(res.statusCode).toBe(400);
-      expect(res.body.message).toBe('User ID, ticket ID, and status are required');
+      expect(res.body.message).toBe('User ID and status are required');
     });
 
     test('should handle ticket not found when processing', async () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket not found'));
 
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/999/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '999',
-          ticketId: '999',
           status: TICKET_STATUS.APPROVED
         });
 
@@ -494,11 +560,10 @@ describe('Ticket API', () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Ticket has already been processed'));
 
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: TICKET_STATUS.APPROVED
         });
 
@@ -510,11 +575,10 @@ describe('Ticket API', () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Managers cannot process their own tickets'));
 
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/3/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '2',
-          ticketId: '3',
           status: TICKET_STATUS.APPROVED
         });
 
@@ -526,11 +590,10 @@ describe('Ticket API', () => {
       ticketRepository.processTicket.mockRejectedValueOnce(new Error('Unexpected database error'));
 
       const res = await request(app)
-        .post('/api/tickets/process')
+        .put('/api/tickets/1/process')
         .set('x-auth-token', managerToken)
         .send({
           userId: '1',
-          ticketId: '1',
           status: TICKET_STATUS.APPROVED
         });
 

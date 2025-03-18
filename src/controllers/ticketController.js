@@ -108,10 +108,11 @@ exports.getAllTickets = async (req, res) => {
 
 exports.processTicket = async (req, res) => {
   try {
-    const { userId, ticketId, status } = req.body;
+    const { ticketId } = req.params;
+    const { userId, status } = req.body;
     
-    if (!userId || !ticketId || !status) {
-      return res.status(400).json({ message: 'User ID, ticket ID, and status are required' });
+    if (!userId || !status) {
+      return res.status(400).json({ message: 'User ID and status are required' });
     }
     
     const processedTicket = await ticketService.processTicket(

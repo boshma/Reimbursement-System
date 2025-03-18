@@ -9,6 +9,6 @@ router.post('/', [auth, upload.single('receipt')], ticketController.createTicket
 router.get('/my', auth, ticketController.getUserTickets);
 
 router.get('/all', [auth, isManager], ticketController.getAllTickets);
-router.post('/process', [auth, isManager], ticketController.processTicket);
+router.put('/:ticketId/process', [auth, isManager], ticketController.processTicket);
 
 module.exports = router;
