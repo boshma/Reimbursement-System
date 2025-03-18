@@ -1,4 +1,3 @@
-// jest.config.js
 module.exports = {
   collectCoverage: true,
   coveragePathIgnorePatterns: [
@@ -11,7 +10,6 @@ module.exports = {
     "/src/utils/",
     "/src/routes/"
   ],
-  // Only include controllers in coverage report
   collectCoverageFrom: [
     "src/controllers/**/*.js"
   ],
@@ -24,7 +22,6 @@ module.exports = {
     }
   },
   testEnvironment: "node",
-  // Adding this to handle potential teardown issues
   testTimeout: 10000,
   forceExit: true
 };

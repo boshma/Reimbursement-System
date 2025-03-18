@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const app = require('../../src/app');
 const { TICKET_STATUS, USER_ROLES, REIMBURSEMENT_TYPES } = require('../../src/utils/constants');
 
-// Mock repositories
 jest.mock('../../src/repositories/ticketRepository');
 jest.mock('../../src/repositories/userRepository');
 
@@ -26,7 +25,6 @@ describe('Ticket API', () => {
   });
 
   beforeEach(() => {
-    // Create tokens
     employeeToken = jwt.sign(
       { user: { id: employeeUser.id, username: employeeUser.username, role: employeeUser.role } },
       process.env.JWT_SECRET || 'testsecret',
@@ -39,7 +37,6 @@ describe('Ticket API', () => {
       { expiresIn: '1h' }
     );
 
-    // Mock repository methods
     userRepository.findById = jest.fn().mockImplementation(id => {
       if (id === '1') return Promise.resolve(employeeUser);
       if (id === '2') return Promise.resolve(managerUser);
@@ -48,7 +45,6 @@ describe('Ticket API', () => {
 
     ticketRepository.create = jest.fn().mockImplementation(ticket => Promise.resolve(ticket));
 
-    // Update mock implementations for pagination
     ticketRepository.findByUser = jest.fn().mockImplementation(() =>
       Promise.resolve({
         tickets: [
@@ -151,25 +147,24 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(201);
       expect(res.body.message).toBe('Ticket created successfully');
       expect(res.body.ticket).toHaveProperty('id');
-      expect(res.body.ticket.amount).toBe(100);  // This should already be a number
+      expect(res.body.ticket.amount).toBe(100);
       expect(res.body.ticket.description).toBe('Test ticket');
       expect(res.body.ticket.reimbursementType).toBe(REIMBURSEMENT_TYPES.TRAVEL);
       expect(res.body.ticket.status).toBe(TICKET_STATUS.PENDING);
     });
 
-    // Test with a string amount
     test('should convert string amount to number when creating a ticket', async () => {
       const res = await request(app)
         .post('/api/tickets')
         .set('x-auth-token', employeeToken)
         .send({
-          amount: "150", // String amount
+          amount: "150",
           description: 'Test ticket with string amount',
           reimbursementType: REIMBURSEMENT_TYPES.TRAVEL
         });
 
       expect(res.statusCode).toBe(201);
-      expect(res.body.ticket.amount).toBe(150); // Should be converted to number
+      expect(res.body.ticket.amount).toBe(150);
       expect(typeof res.body.ticket.amount).toBe('number');
     });
 
@@ -244,7 +239,6 @@ describe('Ticket API', () => {
       expect(res.body).toHaveProperty('pagination');
       expect(ticketRepository.findByUser).toHaveBeenCalledWith('1', 1, 10);
 
-      // Verify amount is a number
       expect(typeof res.body.tickets[0].amount).toBe('number');
       expect(typeof res.body.tickets[1].amount).toBe('number');
     });
@@ -259,7 +253,6 @@ describe('Ticket API', () => {
       expect(res.body).toHaveProperty('pagination');
       expect(ticketRepository.findByUserAndType).toHaveBeenCalledWith('1', REIMBURSEMENT_TYPES.TRAVEL, 1, 10);
 
-      // Verify amount is a number
       expect(typeof res.body.tickets[0].amount).toBe('number');
     });
 
@@ -304,7 +297,6 @@ describe('Ticket API', () => {
     });
 
     test('should get tickets with pagination', async () => {
-      // Mock implementation specific for this test
       ticketRepository.getAllTickets.mockImplementationOnce(() =>
         Promise.resolve({
           tickets: [
@@ -445,7 +437,7 @@ describe('Ticket API', () => {
         process.env.JWT_SECRET || 'testsecret',
         { expiresIn: '1h' }
       );
-      
+
       ticketRepository.findByUser.mockRejectedValueOnce(new Error('Database error'));
     });
 

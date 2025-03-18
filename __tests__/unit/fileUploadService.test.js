@@ -2,7 +2,6 @@ const fileUploadService = require('../../src/services/fileUploadService');
 const { s3Client } = require('../../src/config/s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-// Mock the AWS SDK modules
 jest.mock('@aws-sdk/client-s3', () => {
   return {
     S3Client: jest.fn().mockImplementation(() => ({

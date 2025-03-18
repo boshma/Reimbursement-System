@@ -145,7 +145,7 @@ describe('Auth Routes', () => {
         firstName: 'Test',
         lastName: 'User',
         role: 'EMPLOYEE',
-        profilePictureKey: 'some-key' // Add this so getSignedUrl gets called
+        profilePictureKey: 'some-key'
       };
 
       authService.getUserById.mockResolvedValue(mockUser);
@@ -447,7 +447,6 @@ describe('Auth Routes', () => {
     });
 
     test('should handle specific upload errors with custom message', async () => {
-      // Create a route that simulates the upload failing with a specific error message
       app.use('/api/auth/profile-picture-specific-error', (req, res, next) => {
         req.user = { id: '123' };
         req.file = {
@@ -460,7 +459,6 @@ describe('Auth Routes', () => {
       
       app.put('/api/auth/profile-picture-specific-error', async (req, res) => {
         try {
-          // Simulate a specific error from the file upload service
           throw new Error('Invalid image format');
         } catch (error) {
           console.error('Update profile picture error:', error);
@@ -494,7 +492,6 @@ describe('Auth Routes', () => {
           return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        // Simulate error
         return res.status(500).json({ message: 'Upload failed' });
       });
 

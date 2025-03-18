@@ -1,5 +1,4 @@
 const ticketService = require('../services/ticketService');
-const { TICKET_STATUS } = require('../utils/constants');
 
 exports.createTicket = async (req, res) => {
   try {
@@ -49,7 +48,6 @@ exports.getUserTickets = async (req, res) => {
       );
     }
     
-    // Calculate total pages
     const totalPages = Math.ceil(result.pagination.total / parseInt(limit));
     
     res.json({ 
@@ -88,7 +86,6 @@ exports.getAllTickets = async (req, res) => {
       );
     }
     
-    // Calculate total pages
     const totalPages = Math.ceil(result.pagination.total / parseInt(limit));
     
     res.json({ 

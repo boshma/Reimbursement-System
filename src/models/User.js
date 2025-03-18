@@ -62,7 +62,6 @@ class User {
     });
   }
 
-  // Return user data without sensitive information
   sanitize() {
     const { password, ...userWithoutPassword } = this;
     return userWithoutPassword;

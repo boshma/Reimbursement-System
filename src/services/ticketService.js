@@ -157,7 +157,6 @@ class TicketService {
       throw new Error('Not authorized to process tickets');
     }
 
-    // Check if manager is trying to process their own ticket
     if (managerId === userId) {
       throw new Error('Managers cannot process their own tickets');
     }
