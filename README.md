@@ -57,7 +57,7 @@ x-auth-token: your-jwt-token
 | POST | /api/tickets | Create a new reimbursement ticket |
 | GET | /api/tickets/my | Get current user's tickets |
 | GET | /api/tickets/all | Get all tickets (Manager only) |
-| POST | /api/tickets/process | Process a ticket (Manager only) |
+| PUT | /api/tickets/:ticketId/process | Process a ticket (Manager only) |
 
 ## 1. Authentication Endpoints
 
@@ -755,18 +755,18 @@ This endpoint allows managers to view all tickets in the system.
 
 This endpoint allows managers to approve or deny a ticket.
 
-#### URL Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| ticketId | string | Yes | ID of the ticket to process |
-
 #### Request Headers
 
 | Key | Value | Required |
 |-----|-------|----------|
 | x-auth-token | <auth-token-value> | Yes |
 | Content-Type | application/json | Yes |
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| ticketId | string | Yes | ID of the ticket to process |
 
 #### Request Body
 
@@ -780,7 +780,6 @@ This endpoint allows managers to approve or deny a ticket.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | userId | string | Yes | ID of the user who created the ticket |
-| ticketId | string | Yes | ID of the ticket to process |
 | status | string | Yes | New status: "APPROVED" or "DENIED" |
 
 #### Response
@@ -808,7 +807,7 @@ This endpoint allows managers to approve or deny a ticket.
 **400 Bad Request**
 ```json
 {
-    "message": "User ID, ticket ID, and status are required"
+    "message": "User ID and status are required"
 }
 ```
 ```json
