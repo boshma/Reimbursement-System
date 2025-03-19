@@ -908,3 +908,66 @@ File access is provided through time-limited signed URLs that grant temporary ac
 - Profile pictures must be image files (jpg/jpeg/png/gif)
 - Timestamps are stored in ISO 8601 format
 - Managers cannot process their own tickets
+
+
+# Logging System Documentation
+
+The Reimbursement System includes a comprehensive logging system built with Winston and Morgan to track application events, HTTP requests, and errors.
+
+## Overview
+
+The logging system consists of several components:
+
+1. **Winston Logger Configuration** (`src/config/logger.js`): Core logging utility that manages log levels, formats, and transports.
+2. **HTTP Request Logging Middleware** (`src/middleware/loggerMiddleware.js`): Express middleware that logs incoming HTTP requests using Morgan.
+3. **Integration in Express Application** (`src/app.js`): Logger middleware is applied to the Express application to capture all HTTP traffic.
+
+## Log Levels
+
+The system uses the following log levels (in order of severity):
+
+| Level | Description |
+|-------|-------------|
+| error | Application errors and exceptions |
+| warn | Warning conditions |
+| info | Informational messages |
+| http | HTTP request logs |
+| debug | Debug messages (development only) |
+
+## Log Storage
+
+Logs are stored in the following locations:
+
+- **Console**: All logs in development, filtered in production
+- **combined.log**: All log levels
+- **error.log**: Only error-level logs
+
+Log files use automatic rotation with a 5MB size limit and keep up to 5 historical files.
+
+## HTTP Request Logging
+
+All HTTP requests are logged with the following information:
+- IP address
+- HTTP method
+- URL
+- Status code
+- Response size
+- Response time
+- Request body (with sensitive fields redacted)
+
+## Environment Configuration
+
+The logging behavior adapts based on the `NODE_ENV` environment variable:
+
+- **Development**: Detailed logs including debug level
+- **Production**: More concise logs (info level and above); HTTP logs only for errors (status >= 400)
+
+## Security Considerations
+
+To protect sensitive information:
+- Password fields in request bodies are automatically redacted
+- No sensitive information is logged by the system
+
+## Integration with Error Handling
+
+The system includes a global error handler that logs all uncaught exceptions with detailed context information.
