@@ -1,6 +1,7 @@
 const { dynamoDb, tableName } = require('../config/db');
 const { GetCommand, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const User = require('../models/User');
+const logger = require('../config/logger');
 
 class UserRepository {
   async create(user) {
@@ -36,7 +37,7 @@ class UserRepository {
       const { Item } = await dynamoDb.send(new GetCommand(params));
       return User.fromItem(Item);
     } catch (error) {
-      console.error('Error finding user by ID:', error);
+      logger.error('Error finding user by ID:', error);
       return null;
     }
   }
@@ -56,7 +57,7 @@ class UserRepository {
       if (!Items || Items.length === 0) return null;
       return User.fromItem(Items[0]);
     } catch (error) {
-      console.error('Error finding user by username:', error);
+      logger.error('Error finding user by username:', error);
       return null;
     }
   }

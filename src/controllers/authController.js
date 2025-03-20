@@ -1,5 +1,6 @@
 const authService = require('../services/authService');
 const fileUploadService = require('../services/fileUploadService');
+const logger = require('../config/logger');
 
 exports.register = async (req, res) => {
   try {
@@ -23,7 +24,7 @@ exports.register = async (req, res) => {
     if (error.message === 'Username already exists') {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Register error:', error);
+    logger.error('Register error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -43,7 +44,7 @@ exports.login = async (req, res) => {
     if (error.message === 'Invalid credentials') {
       return res.status(401).json({ message: error.message });
     }
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -62,7 +63,7 @@ exports.getProfile = async (req, res) => {
       profilePictureUrl 
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    logger.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -80,7 +81,7 @@ exports.updateProfile = async (req, res) => {
     
     res.json({ message: 'Profile updated successfully', user: updatedUser });
   } catch (error) {
-    console.error('Update profile error:', error);
+    logger.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -105,7 +106,7 @@ exports.updateUserRole = async (req, res) => {
     if (error.message === 'User not found' || error.message === 'Invalid role') {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Update user role error:', error);
+    logger.error('Update user role error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -128,8 +129,7 @@ exports.updateProfilePicture = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Update profile picture error:', error);
+    logger.error('Update profile picture error:', error);
     res.status(500).json({ message: error.message || 'Server error' });
   }
 };
-

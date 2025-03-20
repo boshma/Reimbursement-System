@@ -2,6 +2,7 @@ const { dynamoDb, tableName } = require('../config/db');
 const { PutCommand, QueryCommand, GetCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const Ticket = require('../models/Ticket');
 const { TICKET_STATUS } = require('../utils/constants');
+const logger = require('../config/logger');
 
 class TicketRepository {
   async create(ticket) {
@@ -58,7 +59,7 @@ class TicketRepository {
       const { Item } = await dynamoDb.send(new GetCommand(params));
       return Ticket.fromItem(Item);
     } catch (error) {
-      console.error('Error finding ticket by ID:', error);
+      logger.error('Error finding ticket by ID:', error);
       return null;
     }
   }
@@ -86,7 +87,7 @@ class TicketRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding tickets by user:', error);
+      logger.error('Error finding tickets by user:', error);
       return {
         tickets: [],
         pagination: {
@@ -125,7 +126,7 @@ class TicketRepository {
         }
       };
     } catch (error) {
-      console.error(`Error finding tickets by status ${status}:`, error);
+      logger.error(`Error finding tickets by status ${status}:`, error);
       return {
         tickets: [],
         pagination: {
@@ -163,7 +164,7 @@ class TicketRepository {
         }
       };
     } catch (error) {
-      console.error('Error finding tickets by user and type:', error);
+      logger.error('Error finding tickets by user and type:', error);
       return {
         tickets: [],
         pagination: {
@@ -221,7 +222,7 @@ class TicketRepository {
         }
       };
     } catch (error) {
-      console.error('Error getting all tickets:', error);
+      logger.error('Error getting all tickets:', error);
       return {
         tickets: [],
         pagination: {

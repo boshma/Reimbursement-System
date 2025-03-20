@@ -460,7 +460,6 @@ describe('Auth Routes', () => {
         try {
           throw new Error('Invalid image format');
         } catch (error) {
-          console.error('Update profile picture error:', error);
           res.status(500).json({ message: error.message || 'Server error' });
         }
       });

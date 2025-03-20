@@ -1,4 +1,5 @@
 const ticketService = require('../services/ticketService');
+const logger = require('../config/logger');
 
 exports.createTicket = async (req, res) => {
   try {
@@ -18,7 +19,7 @@ exports.createTicket = async (req, res) => {
     
     res.status(201).json({ message: 'Ticket created successfully', ticket });
   } catch (error) {
-    console.error('Create ticket error:', error);
+    logger.error('Create ticket error:', error);
     
     if (error.message === 'Invalid reimbursement type') {
       return res.status(400).json({ message: error.message });
@@ -69,7 +70,7 @@ exports.getUserTickets = async (req, res) => {
     if (error.message === 'Invalid reimbursement type') {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Get user tickets error:', error);
+    logger.error('Get user tickets error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -107,7 +108,7 @@ exports.getAllTickets = async (req, res) => {
     if (error.message === 'Invalid ticket status') {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Get tickets error:', error);
+    logger.error('Get tickets error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -139,7 +140,7 @@ exports.processTicket = async (req, res) => {
     if (error.message === 'Not authorized to process tickets') {
       return res.status(403).json({ message: error.message });
     }
-    console.error('Process ticket error:', error);
+    logger.error('Process ticket error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

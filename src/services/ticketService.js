@@ -3,6 +3,7 @@ const userRepository = require('../repositories/userRepository');
 const Ticket = require('../models/Ticket');
 const fileUploadService = require('../services/fileUploadService');
 const { TICKET_STATUS, REIMBURSEMENT_TYPES, USER_ROLES } = require('../utils/constants');
+const logger = require('../config/logger');
 
 class TicketService {
   async createTicket(userId, ticketData, file = null) {
@@ -47,7 +48,7 @@ class TicketService {
         try {
           ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
         } catch (error) {
-          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          logger.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
           ticket.receiptUrl = null;
         }
       }
@@ -72,7 +73,7 @@ class TicketService {
         try {
           ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
         } catch (error) {
-          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          logger.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
           ticket.receiptUrl = null;
         }
       }
@@ -94,7 +95,7 @@ class TicketService {
       try {
         ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
       } catch (error) {
-        console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+        logger.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
         ticket.receiptUrl = null;
       }
     }
@@ -115,7 +116,7 @@ class TicketService {
         try {
           ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
         } catch (error) {
-          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          logger.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
           ticket.receiptUrl = null;
         }
       }
@@ -136,7 +137,7 @@ class TicketService {
         try {
           ticket.receiptUrl = await fileUploadService.getSignedUrl(ticket.receiptKey);
         } catch (error) {
-          console.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
+          logger.error(`Error generating URL for receipt ${ticket.receiptKey}:`, error);
           ticket.receiptUrl = null;
         }
       }

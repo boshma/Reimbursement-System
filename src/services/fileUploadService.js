@@ -3,6 +3,7 @@ const { PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
 const path = require('path');
+const logger = require('../config/logger');
 
 class FileUploadService {
   generateFileName(originalname, fileType = 'receipts') {
@@ -30,7 +31,7 @@ class FileUploadService {
       await s3Client.send(new PutObjectCommand(uploadParams));
       return fileName;
     } catch (error) {
-      console.error(`Error uploading ${fileType} to S3:`, error);
+      logger.error(`Error uploading ${fileType} to S3:`, error);
       throw new Error(`Failed to upload ${fileType}`);
     }
   }
@@ -55,7 +56,7 @@ class FileUploadService {
       const url = await getSignedUrl(s3Client, command, { expiresIn: expirationSeconds });
       return url;
     } catch (error) {
-      console.error('Error generating signed URL:', error);
+      logger.error('Error generating signed URL:', error);
       throw new Error('Failed to generate URL');
     }
   }

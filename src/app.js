@@ -35,7 +35,7 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   app.listen(port, () => {
-    logger.info(`Server running on http://localhost:${port}`);
+    logger.info(`Server running on http://localhost:${port} in ${process.env.NODE_ENV} mode`);
   });
 }
 

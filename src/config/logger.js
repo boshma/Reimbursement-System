@@ -26,14 +26,14 @@ const logger = winston.createLogger({
     levels,
     format: logFormat,
     transports: [
-        new winston.transports.Console({
-            format: winston.format.combine(
-                winston.format.colorize(),
-                winston.format.printf(
-                    (info) => `${info.timestamp} ${info.level}: ${info.message}${info.stack ? '\n' + info.stack : ''}`
-                )
-            ),
-        }),
+        // new winston.transports.Console({
+        //     format: winston.format.combine(
+        //         winston.format.colorize(),
+        //         winston.format.printf(
+        //             (info) => `${info.timestamp} ${info.level}: ${info.message}${info.stack ? '\n' + info.stack : ''}`
+        //         )
+        //     ),
+        // }),
         new winston.transports.File({
             filename: path.join('logs', 'error.log'),
             level: 'error',
