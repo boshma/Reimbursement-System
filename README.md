@@ -51,13 +51,13 @@ x-auth-token: your-jwt-token
 | POST | /api/auth/register | Register a new user |
 | POST | /api/auth/login | Login and get authentication token |
 | GET | /api/auth/profile | Get user profile |
-| PUT | /api/auth/profile | Update user profile |
-| PUT | /api/auth/role | Update user role (Manager only) |
-| PUT | /api/auth/profile-picture | Upload/update profile picture |
+| PATCH | /api/auth/profile | Update user profile |
+| PATCH | /api/auth/users/:userId/role | Update user role (Manager only) |
+| PATCH | /api/auth/profile/picture | Upload/update profile picture |
 | POST | /api/tickets | Create a new reimbursement ticket |
-| GET | /api/tickets/my | Get current user's tickets |
-| GET | /api/tickets/all | Get all tickets (Manager only) |
-| PUT | /api/tickets/:ticketId/process | Process a ticket (Manager only) |
+| GET | /api/tickets/users/:userId/tickets | Get specific user's tickets |
+| GET | /api/tickets | Get all tickets (Manager only) |
+| PATCH | /api/tickets/users/:userId/tickets/:ticketId/status | Process a ticket (Manager only) |
 
 ## 1. Authentication Endpoints
 
@@ -124,11 +124,6 @@ This endpoint allows users to create a new account. All new users are registered
 ```json
 {
     "message": "Username already exists"
-}
-```
-```json
-{
-    "message": "Server error"
 }
 ```
 
@@ -262,7 +257,7 @@ If no profile picture has been uploaded, profilePictureUrl will be null.
 
 ### 1.4 Update User Profile
 
-`PUT /api/auth/profile`
+`PATCH /api/auth/profile`
 
 This endpoint updates the authenticated user's profile information.
 
@@ -332,7 +327,7 @@ This endpoint updates the authenticated user's profile information.
 
 ### 1.5 Update User Role
 
-`PUT /api/auth/role`
+`PATCH /api/auth/users/:userId/role`
 
 This endpoint allows managers to change other users' roles.
 
@@ -343,18 +338,22 @@ This endpoint allows managers to change other users' roles.
 | x-auth-token | <auth-token-value> | Yes |
 | Content-Type | application/json | Yes |
 
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| userId | string | Yes | ID of the user whose role is being changed |
+
 #### Request Body
 
 ```json
 {
-    "userId": "38c83721-e03e-4e82-bc56-13fc97efdebd",
     "role": "MANAGER"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| userId | string | Yes | ID of the user whose role is being changed |
 | role | string | Yes | New role: "EMPLOYEE" or "MANAGER" |
 
 #### Response
@@ -403,7 +402,7 @@ This endpoint allows managers to change other users' roles.
 **403 Forbidden**
 ```json
 {
-    "message": "Access denied. Manager role required."
+    "message": "Not authorized to update user roles"
 }
 ```
 
@@ -416,7 +415,7 @@ This endpoint allows managers to change other users' roles.
 
 ### 1.6 Update Profile Picture
 
-`PUT /api/auth/profile-picture`
+`PATCH /api/auth/profile/picture`
 
 This endpoint allows users to upload or update their profile picture.
 
@@ -576,15 +575,21 @@ Form data with the following fields:
 
 ### 2.2 Get User's Tickets
 
-`GET /api/tickets/my`
+`GET /api/tickets/users/:userId/tickets`
 
-This endpoint allows employees to view their own tickets.
+This endpoint allows employees to view their own tickets or managers to view any user's tickets.
 
 #### Request Headers
 
 | Key | Value | Required |
 |-----|-------|----------|
 | x-auth-token | <auth-token-value> | Yes |
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| userId | string | Yes | ID of the user whose tickets to retrieve |
 
 #### Query Parameters
 
@@ -651,6 +656,13 @@ This endpoint allows employees to view their own tickets.
 }
 ```
 
+**403 Forbidden**
+```json
+{
+    "message": "Access denied. You can only view your own tickets."
+}
+```
+
 **500 Server Error**
 ```json
 {
@@ -660,7 +672,7 @@ This endpoint allows employees to view their own tickets.
 
 ### 2.3 Get All Tickets (Manager Only)
 
-`GET /api/tickets/all`
+`GET /api/tickets`
 
 This endpoint allows managers to view all tickets in the system.
 
@@ -751,7 +763,7 @@ This endpoint allows managers to view all tickets in the system.
 
 ### 2.4 Process a Ticket (Manager Only)
 
-`PUT /api/tickets/:ticketId/process`
+`PATCH /api/tickets/users/:userId/tickets/:ticketId/status`
 
 This endpoint allows managers to approve or deny a ticket.
 
@@ -766,20 +778,19 @@ This endpoint allows managers to approve or deny a ticket.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| userId | string | Yes | ID of the user who created the ticket |
 | ticketId | string | Yes | ID of the ticket to process |
 
 #### Request Body
 
 ```json
 {
-    "userId": "38c83721-e03e-4e82-bc56-13fc97efdebd",
     "status": "APPROVED"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| userId | string | Yes | ID of the user who created the ticket |
 | status | string | Yes | New status: "APPROVED" or "DENIED" |
 
 #### Response
@@ -807,7 +818,7 @@ This endpoint allows managers to approve or deny a ticket.
 **400 Bad Request**
 ```json
 {
-    "message": "User ID and status are required"
+    "message": "Status is required"
 }
 ```
 ```json
@@ -841,7 +852,7 @@ This endpoint allows managers to approve or deny a ticket.
 **403 Forbidden**
 ```json
 {
-    "message": "Access denied. Manager role required."
+    "message": "Not authorized to process tickets"
 }
 ```
 
