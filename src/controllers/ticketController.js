@@ -31,18 +31,24 @@ exports.createTicket = async (req, res) => {
 exports.getUserTickets = async (req, res) => {
   try {
     const { type, page = 1, limit = 10 } = req.query;
+    const userId = req.params.userId;
+    
+    if (userId !== req.user.id && req.user.role !== 'MANAGER') {
+      return res.status(403).json({ message: 'Access denied. You can only view your own tickets.' });
+    }
+    
     let result;
     
     if (type) {
       result = await ticketService.getUserTicketsByType(
-        req.user.id, 
+        userId, 
         type, 
         parseInt(page), 
         parseInt(limit)
       );
     } else {
       result = await ticketService.getUserTickets(
-        req.user.id, 
+        userId, 
         parseInt(page), 
         parseInt(limit)
       );
@@ -108,15 +114,15 @@ exports.getAllTickets = async (req, res) => {
 
 exports.processTicket = async (req, res) => {
   try {
-    const { ticketId } = req.params;
-    const { userId, status } = req.body;
+    const { userId, ticketId } = req.params;
+    const { status } = req.body;
     
-    if (!userId || !status) {
-      return res.status(400).json({ message: 'User ID and status are required' });
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
     }
     
     const processedTicket = await ticketService.processTicket(
-      req.user.id,
+      req.user.id, 
       userId,
       ticketId,
       status

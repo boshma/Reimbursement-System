@@ -6,9 +6,9 @@ const { isManager } = require('../middleware/roleCheck');
 const upload = require('../middleware/multerUpload');
 
 router.post('/', [auth, upload.single('receipt')], ticketController.createTicket);
-router.get('/my', auth, ticketController.getUserTickets);
+router.get('/users/:userId/tickets', auth, ticketController.getUserTickets);
 
-router.get('/all', [auth, isManager], ticketController.getAllTickets);
-router.put('/:ticketId/process', [auth, isManager], ticketController.processTicket);
+router.get('/', [auth, isManager], ticketController.getAllTickets);
+router.patch('/users/:userId/tickets/:ticketId/status', [auth, isManager], ticketController.processTicket);
 
 module.exports = router;

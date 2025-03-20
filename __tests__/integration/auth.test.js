@@ -221,7 +221,7 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('PUT /api/auth/profile', () => {
+  describe('PATCH /api/auth/profile', () => {
     test('should update user profile', async () => {
       const updateData = {
         firstName: 'Updated',
@@ -244,7 +244,7 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123' } });
 
       const response = await request(app)
-        .put('/api/auth/profile')
+        .patch('/api/auth/profile')
         .set('x-auth-token', 'valid-token')
         .send(updateData);
 
@@ -259,7 +259,7 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123' } });
 
       const response = await request(app)
-        .put('/api/auth/profile')
+        .patch('/api/auth/profile')
         .set('x-auth-token', 'valid-token')
         .send({ firstName: 'Updated' });
 
@@ -268,10 +268,9 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('PUT /api/auth/role', () => {
+  describe('PATCH /api/auth/users/:userId/role', () => {
     test('should update user role when manager', async () => {
       const roleData = {
-        userId: '456',
         role: 'MANAGER'
       };
 
@@ -285,7 +284,7 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
 
       const response = await request(app)
-        .put('/api/auth/role')
+        .patch('/api/auth/users/456/role')
         .set('x-auth-token', 'valid-token')
         .send(roleData);
 
@@ -299,9 +298,9 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123', role: 'EMPLOYEE' } });
       
       const response = await request(app)
-        .put('/api/auth/role')
+        .patch('/api/auth/users/456/role')
         .set('x-auth-token', 'valid-token')
-        .send({ userId: '456', role: 'MANAGER' });
+        .send({ role: 'MANAGER' });
       
       expect(response.status).toBe(403);
       expect(response.body).toHaveProperty('message', 'Access denied. Manager role required.');
@@ -312,9 +311,9 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
 
       const response = await request(app)
-        .put('/api/auth/role')
+        .patch('/api/auth/users/456/role')
         .set('x-auth-token', 'valid-token')
-        .send({ userId: '456' });
+        .send({});
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'User ID and role are required');
@@ -325,9 +324,9 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
 
       const response = await request(app)
-        .put('/api/auth/role')
+        .patch('/api/auth/users/999/role')
         .set('x-auth-token', 'valid-token')
-        .send({ userId: '999', role: 'MANAGER' });
+        .send({ role: 'MANAGER' });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'User not found');
@@ -338,9 +337,9 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
 
       const response = await request(app)
-        .put('/api/auth/role')
+        .patch('/api/auth/users/456/role')
         .set('x-auth-token', 'valid-token')
-        .send({ userId: '456', role: 'INVALID_ROLE' });
+        .send({ role: 'INVALID_ROLE' });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'Invalid role');
@@ -351,16 +350,16 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123', role: 'MANAGER' } });
 
       const response = await request(app)
-        .put('/api/auth/role')
+        .patch('/api/auth/users/456/role')
         .set('x-auth-token', 'valid-token')
-        .send({ userId: '456', role: 'MANAGER' });
+        .send({ role: 'MANAGER' });
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('message', 'Server error');
     });
   });
 
-  describe('PUT /api/auth/profile-picture', () => {
+  describe('PATCH /api/auth/profile/picture', () => {
     test('should update profile picture', async () => {
       const mockUpdatedUser = {
         id: '123',
@@ -385,7 +384,7 @@ describe('Auth Routes', () => {
         next();
       });
 
-      app.put('/api/auth/profile-picture-test', (req, res) => {
+      app.patch('/api/auth/profile-picture-test', (req, res) => {
         if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
           return res.status(400).json({ message: 'No file uploaded or file is empty' });
         }
@@ -398,7 +397,7 @@ describe('Auth Routes', () => {
       });
 
       const response = await request(app)
-        .put('/api/auth/profile-picture-test')
+        .patch('/api/auth/profile-picture-test')
         .set('x-mock-file', 'true');
 
       expect(response.status).toBe(200);
@@ -411,7 +410,7 @@ describe('Auth Routes', () => {
       jwt.verify.mockReturnValue({ user: { id: '123' } });
     
       const response = await request(app)
-        .put('/api/auth/profile-picture')
+        .patch('/api/auth/profile/picture')
         .set('x-auth-token', 'valid-token');
     
       expect(response.status).toBe(400);
@@ -430,7 +429,7 @@ describe('Auth Routes', () => {
         next();
       });
 
-      app.put('/api/auth/profile-picture-empty-test', (req, res) => {
+      app.patch('/api/auth/profile-picture-empty-test', (req, res) => {
         if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
           return res.status(400).json({ message: 'No file uploaded or file is empty' });
         }
@@ -439,7 +438,7 @@ describe('Auth Routes', () => {
       });
 
       const response = await request(app)
-        .put('/api/auth/profile-picture-empty-test')
+        .patch('/api/auth/profile-picture-empty-test')
         .set('x-auth-token', 'valid-token');
 
       expect(response.status).toBe(400);
@@ -457,7 +456,7 @@ describe('Auth Routes', () => {
         next();
       });
       
-      app.put('/api/auth/profile-picture-specific-error', async (req, res) => {
+      app.patch('/api/auth/profile-picture-specific-error', async (req, res) => {
         try {
           throw new Error('Invalid image format');
         } catch (error) {
@@ -467,7 +466,7 @@ describe('Auth Routes', () => {
       });
       
       const response = await request(app)
-        .put('/api/auth/profile-picture-specific-error');
+        .patch('/api/auth/profile-picture-specific-error');
       
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('message', 'Invalid image format');
@@ -487,7 +486,7 @@ describe('Auth Routes', () => {
         next();
       });
 
-      app.put('/api/auth/profile-picture-error-test', (req, res) => {
+      app.patch('/api/auth/profile-picture-error-test', (req, res) => {
         if (!req.file) {
           return res.status(400).json({ message: 'No file uploaded' });
         }
@@ -496,7 +495,7 @@ describe('Auth Routes', () => {
       });
 
       const response = await request(app)
-        .put('/api/auth/profile-picture-error-test')
+        .patch('/api/auth/profile-picture-error-test')
         .set('x-mock-file', 'true');
 
       expect(response.status).toBe(500);

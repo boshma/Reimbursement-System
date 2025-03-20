@@ -87,7 +87,8 @@ exports.updateProfile = async (req, res) => {
 
 exports.updateUserRole = async (req, res) => {
   try {
-    const { userId, role } = req.body;
+    const { role } = req.body;
+    const userId = req.params.userId;
     
     if (!userId || !role) {
       return res.status(400).json({ message: 'User ID and role are required' });
