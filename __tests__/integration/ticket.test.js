@@ -5,11 +5,14 @@ const { TICKET_STATUS, USER_ROLES, REIMBURSEMENT_TYPES } = require('../../src/ut
 
 jest.mock('../../src/repositories/ticketRepository');
 jest.mock('../../src/repositories/userRepository');
+jest.mock('../../src/services/fileUploadService');
 
 const ticketRepository = require('../../src/repositories/ticketRepository');
 const userRepository = require('../../src/repositories/userRepository');
+const fileUploadService = require('../../src/services/fileUploadService');
 const User = require('../../src/models/User');
 const Ticket = require('../../src/models/Ticket');
+const ticketController = require('../../src/controllers/ticketController');
 
 describe('Ticket API', () => {
   let employeeToken, managerToken;
@@ -127,6 +130,9 @@ describe('Ticket API', () => {
         })
       )
     );
+    
+    fileUploadService.uploadReceipt = jest.fn().mockResolvedValue('receipts/test-receipt.jpg');
+    fileUploadService.getSignedUrl = jest.fn().mockResolvedValue('https://example.com/receipts/test-receipt.jpg');
   });
 
   afterEach(() => {
@@ -226,6 +232,33 @@ describe('Ticket API', () => {
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Some unexpected server error');
     });
+    
+    test('should handle file upload errors in createTicket', async () => {
+      fileUploadService.uploadReceipt.mockRejectedValueOnce(new Error('Upload failed'));
+      
+      app.use('/api/tickets-file-upload-test', (req, res, next) => {
+        req.user = { id: '1' };
+        req.file = {
+          originalname: 'receipt.jpg',
+          buffer: Buffer.from('test content'),
+          mimetype: 'image/jpeg'
+        };
+        next();
+      });
+      
+      app.post('/api/tickets-file-upload-test', ticketController.createTicket);
+      
+      const response = await request(app)
+        .post('/api/tickets-file-upload-test')
+        .send({
+          amount: 100,
+          description: 'Test ticket with file upload',
+          reimbursementType: REIMBURSEMENT_TYPES.TRAVEL
+        });
+      
+      expect(response.statusCode).toBe(500);
+      expect(response.body.message).toBe('Upload failed');
+    });
   });
 
   describe('GET /api/tickets/users/:userId/tickets', () => {
@@ -270,6 +303,14 @@ describe('Ticket API', () => {
         .get('/api/tickets/users/1/tickets');
 
       expect(res.statusCode).toBe(401);
+    });
+    test('should deny access when employee tries to view another user\'s tickets', async () => {
+      const response = await request(app)
+        .get('/api/tickets/users/2/tickets')
+        .set('x-auth-token', employeeToken);
+        
+      expect(response.statusCode).toBe(403);
+      expect(response.body.message).toBe('Access denied. You can only view your own tickets.');
     });
   });
 
@@ -475,6 +516,37 @@ describe('Ticket API', () => {
 
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Server error');
+    });
+    
+    test('should correctly handle different error types in processTicket', async () => {
+      const errorCases = [
+        { error: 'Ticket not found', expectedStatus: 400 },
+        { error: 'Invalid ticket status', expectedStatus: 400 }, 
+        { error: 'Ticket has already been processed', expectedStatus: 400 },
+        { error: 'Managers cannot process their own tickets', expectedStatus: 400 },
+        { error: 'Not authorized to process tickets', expectedStatus: 403 },
+        { error: 'Some other error', expectedStatus: 500 }
+      ];
+      
+      for (const { error, expectedStatus } of errorCases) {
+        jest.clearAllMocks();
+        
+        userRepository.findById = jest.fn().mockImplementation(id => {
+          if (id === '1') return Promise.resolve(employeeUser);
+          if (id === '2') return Promise.resolve(managerUser);
+          return Promise.resolve(null);
+        });
+        
+        ticketRepository.processTicket = jest.fn().mockRejectedValueOnce(new Error(error));
+        
+        const response = await request(app)
+          .patch('/api/tickets/users/1/tickets/1/status')
+          .set('x-auth-token', managerToken)
+          .send({ status: TICKET_STATUS.APPROVED });
+        
+        expect(response.statusCode).toBe(expectedStatus);
+        expect(response.body.message).toBe(expectedStatus === 500 ? 'Server error' : error);
+      }
     });
   });
 

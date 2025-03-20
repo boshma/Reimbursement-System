@@ -3,6 +3,7 @@ const app = require('../../src/app');
 const authService = require('../../src/services/authService');
 const fileUploadService = require('../../src/services/fileUploadService');
 const jwt = require('jsonwebtoken');
+const authController = require('../../src/controllers/authController');
 
 jest.mock('../../src/services/authService');
 jest.mock('../../src/services/fileUploadService');
@@ -499,6 +500,78 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('message', 'Upload failed');
+    });
+    
+    test('should fully test the updateProfilePicture function path', async () => {
+      app.use('/api/auth/profile-picture-full-test', (req, res, next) => {
+        req.user = { id: '123' };
+        req.file = {
+          originalname: 'test.jpg',
+          buffer: Buffer.from('test content'),
+          mimetype: 'image/jpeg'
+        };
+        next();
+      });
+      
+      app.patch('/api/auth/profile-picture-full-test', authController.updateProfilePicture);
+      
+      fileUploadService.uploadProfilePicture.mockResolvedValue('profiles/test-profile.jpg');
+      authService.updateProfilePicture.mockResolvedValue({
+        id: '123',
+        username: 'testuser',
+        profilePictureKey: 'profiles/test-profile.jpg'
+      });
+      fileUploadService.getSignedUrl.mockResolvedValue('https://example.com/profiles/test-profile.jpg');
+      
+      let response = await request(app)
+        .patch('/api/auth/profile-picture-full-test');
+        
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'Profile picture updated successfully');
+      expect(response.body).toHaveProperty('profilePictureUrl', 'https://example.com/profiles/test-profile.jpg');
+      
+      fileUploadService.uploadProfilePicture.mockRejectedValueOnce(new Error('Upload service error'));
+      
+      response = await request(app)
+        .patch('/api/auth/profile-picture-full-test');
+        
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Upload service error');
+      
+      fileUploadService.uploadProfilePicture.mockResolvedValue('profiles/test-profile.jpg');
+      authService.updateProfilePicture.mockRejectedValueOnce(new Error('User update error'));
+      
+      response = await request(app)
+        .patch('/api/auth/profile-picture-full-test');
+        
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'User update error');
+      
+      authService.updateProfilePicture.mockResolvedValue({
+        id: '123',
+        username: 'testuser',
+        profilePictureKey: 'profiles/test-profile.jpg'
+      });
+      fileUploadService.getSignedUrl.mockRejectedValueOnce(new Error('URL generation error'));
+      
+      response = await request(app)
+        .patch('/api/auth/profile-picture-full-test');
+        
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'URL generation error');
+    });
+    
+    test('should handle errors in getProfile function', async () => {
+      jwt.verify.mockReturnValue({ user: { id: '123' } });
+      
+      authService.getUserById.mockRejectedValueOnce(new Error('User fetch error'));
+      
+      const response = await request(app)
+        .get('/api/auth/profile')
+        .set('x-auth-token', 'valid-token');
+        
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('message', 'Server error');
     });
   });
 });
