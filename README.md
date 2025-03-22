@@ -57,7 +57,7 @@ x-auth-token: your-jwt-token
 | POST | /api/tickets | Create a new reimbursement ticket |
 | GET | /api/tickets/users/:userId/tickets | Get specific user's tickets |
 | GET | /api/tickets | Get all tickets (Manager only) |
-| PATCH | /api/tickets/users/:userId/tickets/:ticketId/status | Process a ticket (Manager only) |
+| PATCH | /api/tickets/:ticketId | Process a ticket (Manager only) |
 
 ## 1. Authentication Endpoints
 
@@ -763,7 +763,7 @@ This endpoint allows managers to view all tickets in the system.
 
 ### 2.4 Process a Ticket (Manager Only)
 
-`PATCH /api/tickets/users/:userId/tickets/:ticketId/status`
+`PATCH /api/tickets/:ticketId`
 
 This endpoint allows managers to approve or deny a ticket.
 
@@ -778,7 +778,6 @@ This endpoint allows managers to approve or deny a ticket.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| userId | string | Yes | ID of the user who created the ticket |
 | ticketId | string | Yes | ID of the ticket to process |
 
 #### Request Body
