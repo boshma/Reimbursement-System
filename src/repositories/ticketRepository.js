@@ -7,7 +7,7 @@ const logger = require('../config/logger');
 class TicketRepository {
   async create(ticket) {
     const item = ticket.toItem();
-    
+
     const params = {
       TableName: tableName,
       Item: item,
@@ -114,10 +114,10 @@ class TicketRepository {
 
     try {
       const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
-      
+
       const startIndex = (page - 1) * limit;
       const paginatedItems = Items.slice(startIndex, startIndex + limit);
-      
+
       return {
         tickets: paginatedItems.map(item => Ticket.fromItem(item)),
         pagination: {
@@ -152,10 +152,10 @@ class TicketRepository {
 
     try {
       const { Items, Count, ScannedCount } = await dynamoDb.send(new QueryCommand(params));
-      
+
       const startIndex = (page - 1) * limit;
       const paginatedItems = Items.slice(startIndex, startIndex + limit);
-      
+
       return {
         tickets: paginatedItems.map(item => Ticket.fromItem(item)),
         pagination: {
@@ -205,15 +205,15 @@ class TicketRepository {
         ':entityType': 'TICKET'
       }
     };
-    
+
     try {
       const { Items, Count, ScannedCount } = await dynamoDb.send(new ScanCommand(params));
       const sortedItems = Items.map(item => Ticket.fromItem(item))
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      
+
       const startIndex = (page - 1) * limit;
       const paginatedItems = sortedItems.slice(startIndex, startIndex + limit);
-      
+
       return {
         tickets: paginatedItems,
         pagination: {
@@ -230,6 +230,27 @@ class TicketRepository {
           scannedCount: 0
         }
       };
+    }
+  }
+
+  async findByTicketId(ticketId) {
+    const params = {
+      TableName: tableName,
+      IndexName: 'TicketIdIndex',
+      KeyConditionExpression: 'id = :ticketId AND entityType = :entityType',
+      ExpressionAttributeValues: {
+        ':ticketId': ticketId,
+        ':entityType': 'TICKET'
+      }
+    };
+
+    try {
+      const { Items } = await dynamoDb.send(new QueryCommand(params));
+      if (!Items || Items.length === 0) return null;
+      return Ticket.fromItem(Items[0]);
+    } catch (error) {
+      logger.error('Error finding ticket by ID:', error);
+      return null;
     }
   }
 }

@@ -20,6 +20,10 @@ Resources:
           AttributeType: S
         - AttributeName: status
           AttributeType: S
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: entityType
+          AttributeType: S
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
@@ -45,6 +49,14 @@ Resources:
             - AttributeName: status
               KeyType: HASH
             - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: TicketIdIndex
+          KeySchema:
+            - AttributeName: id
+              KeyType: HASH
+            - AttributeName: entityType
               KeyType: RANGE
           Projection:
             ProjectionType: ALL

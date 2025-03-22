@@ -38,7 +38,7 @@ class TicketService {
 
     return ticketRepository.create(newTicket);
   }
-  
+
   async getUserTickets(userId, page = 1, limit = 10) {
     const result = await ticketRepository.findByUser(userId, page, limit);
     const tickets = result.tickets || [];
@@ -149,20 +149,36 @@ class TicketService {
     };
   }
 
-  async processTicket(managerId, userId, ticketId, status) {
-    if (!Object.values(TICKET_STATUS).includes(status)) {
+  async processTicket(managerId, ticketId, status) {
+    if (status !== TICKET_STATUS.APPROVED && status !== TICKET_STATUS.DENIED) {
       throw new Error('Invalid ticket status');
     }
-    const manager = await userRepository.findById(managerId);
-    if (!manager || manager.role !== USER_ROLES.MANAGER) {
-      throw new Error('Not authorized to process tickets');
+
+    const ticket = await ticketRepository.findByTicketId(ticketId);
+
+    if (!ticket) {
+      throw new Error('Ticket not found');
     }
 
-    if (managerId === userId) {
+    if (ticket.userId === managerId) {
       throw new Error('Managers cannot process their own tickets');
     }
 
-    return ticketRepository.processTicket(ticketId, userId, managerId, status);
+    if (ticket.status !== TICKET_STATUS.PENDING) {
+      throw new Error('Ticket has already been processed');
+    }
+
+    const user = await userRepository.findById(managerId);
+    if (!user || user.role !== USER_ROLES.MANAGER) {
+      throw new Error('Not authorized to process tickets');
+    }
+
+    ticket.status = status;
+    ticket.updatedAt = new Date().toISOString();
+    ticket.processedBy = managerId;
+    ticket.processedAt = new Date().toISOString();
+
+    return ticketRepository.update(ticket);
   }
 }
 

@@ -115,7 +115,7 @@ exports.getAllTickets = async (req, res) => {
 
 exports.processTicket = async (req, res) => {
   try {
-    const { userId, ticketId } = req.params;
+    const { ticketId } = req.params;
     const { status } = req.body;
     
     if (!status) {
@@ -123,8 +123,7 @@ exports.processTicket = async (req, res) => {
     }
     
     const processedTicket = await ticketService.processTicket(
-      req.user.id, 
-      userId,
+      req.user.id,
       ticketId,
       status
     );
