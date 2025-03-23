@@ -901,6 +901,7 @@ The system uses a single-table design in DynamoDB with the following structure:
 | UsernameIndex | GSI for looking up users by username |
 | UserTicketsIndex | GSI for filtering tickets by user |
 | TicketStatusIndex | GSI for filtering tickets by status |
+| TicketIdIndex | GSI for looking up tickets by ID |
 
 ## File Upload
 
